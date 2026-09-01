@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Router — Sevkiyat Rota Planlayıcı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16202B; --ink-soft:#3B4757; --muted:#6E7A88;
+    --concrete:#E7E9EB; --panel:#FFFFFF; --line:#C9CFD6;
+    --blue:#0B4F9E; --blue-dk:#083C78; --green:#0F6B47;
+    --amber:#B8760A; --red:#9E2B1F;
+    --display:"Barlow Semi Condensed",-apple-system,Segoe UI,sans-serif;
+    --body:"Inter",-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--concrete);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .num{font-family:var(--display);font-variant-numeric:tabular-nums}
+
+  header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:4px solid var(--blue)}
+  header h1{font-family:var(--display);font-size:30px;font-weight:700;margin:0;letter-spacing:.02em}
+  header .sub{color:#9FB0C2;font-size:14px}
+  header .spacer{flex:1}
+  header .clock{font-family:var(--display);font-size:18px;color:#9FB0C2}
+
+  .wrap{max-width:1360px;margin:0 auto;padding:18px;display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+  @media(max-width:940px){.wrap{grid-template-columns:1fr}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:3px;margin-bottom:18px}
+  .panel > h2{font-family:var(--display);font-size:19px;font-weight:600;margin:0;padding:11px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .panel > h2 .count{color:var(--muted);font-size:16px}
+  .pad{padding:14px}
+
+  label{display:block;font-size:12.5px;color:var(--ink-soft);font-weight:500;margin-bottom:4px}
+  label .opt{color:var(--muted);font-weight:400}
+  input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:2px;font-family:var(--body);font-size:14px;color:var(--ink);background:#fff}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+  .field{margin-bottom:11px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+  button{font-family:var(--body);font-size:14px;font-weight:600;cursor:pointer;border-radius:2px;border:1px solid transparent;padding:9px 14px}
+  .btn-primary{background:var(--blue);color:#fff;width:100%}
+  .btn-primary:hover{background:var(--blue-dk)}
+  .btn-ghost{background:#fff;color:var(--ink-soft);border-color:var(--line)}
+  .btn-ghost:hover{background:#F4F6F8}
+  .btn-go{background:var(--green);color:#fff;width:100%;font-size:16px;padding:13px}
+  .btn-go:hover{filter:brightness(1.1)}
+  .btn-go:disabled,.btn-primary:disabled{background:#A9B4C0;cursor:not-allowed}
+  .btn-gps{background:#fff;color:var(--blue);border:1px solid var(--blue);width:100%;padding:8px}
+  .btn-gps:hover{background:#EEF4FB}
+  .btn-x{background:none;border:none;color:var(--muted);font-size:17px;padding:2px 6px;line-height:1}
+  .btn-x:hover{color:var(--red)}
+  .btnbar{display:flex;gap:8px;margin-top:8px}
+  .btnbar button{flex:1}
+
+  .modebar{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden;margin-bottom:14px}
+  .modebar button{flex:1;background:#fff;border:none;padding:10px 6px;color:var(--ink-soft);border-radius:0;font-size:13.5px}
+  .modebar button[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+  .gpsline{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:7px;font-size:12px;color:var(--muted)}
+  .acc{background:#EEF4FB;border:1px solid #BFD5EC;color:var(--blue-dk);padding:1px 6px;border-radius:2px;font-weight:600;font-size:11.5px}
+  .acc.bad{background:#FDF3E3;border-color:#E8CFA0;color:var(--amber)}
+  .err{color:var(--red);font-size:12.5px;margin-top:7px;line-height:1.45}
+  .exact{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;flex:none}
+  .approx{display:inline-block;width:7px;height:7px;border:1.5px solid var(--amber);border-radius:50%;flex:none}
+
+  ul.stops{list-style:none;margin:0;padding:0;max-height:290px;overflow-y:auto}
+  ul.stops li{display:flex;align-items:center;gap:9px;padding:8px 14px;border-bottom:1px solid #EEF1F3}
+  ul.stops li:last-child{border-bottom:none}
+  .stop-city{font-weight:600;font-size:14px}
+  .stop-meta{font-size:12px;color:var(--muted)}
+  .stop-main{flex:1;min-width:0}
+  .stop-main div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .empty{padding:26px 16px;color:var(--muted);font-size:14px;text-align:center;line-height:1.55}
+  .stop-veh{width:auto;flex:none;font-size:11.5px;padding:3px 6px;margin-left:2px;max-width:96px}
+
+  .board{background:var(--ink);color:#fff;border-radius:3px;padding:16px 18px;margin-bottom:18px}
+  .board .lead{color:#9FB0C2;font-size:13.5px;margin-bottom:12px}
+  .savegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:560px){.savegrid{grid-template-columns:1fr}}
+  .save .big{font-family:var(--display);font-size:44px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .save .unit{font-size:19px;font-weight:600;margin-left:3px}
+  .save .cap{font-size:13px;color:#9FB0C2;margin-top:3px}
+  .save.pos .big{color:#5FD3A0}
+  .bars{margin-top:16px;border-top:1px solid #2C3946;padding-top:14px}
+  .bar-row{display:grid;grid-template-columns:120px 1fr 92px;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
+  .bar-row .lbl{color:#9FB0C2}
+  .bar-track{background:#2C3946;height:16px;border-radius:2px;overflow:hidden}
+  .bar-fill{height:100%;transition:width .5s ease}
+  .bar-fill.before{background:#7C8A99}
+  .bar-fill.after{background:#5FD3A0}
+  .bar-val{text-align:right;font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+  @media(max-width:560px){.bar-row{grid-template-columns:88px 1fr 76px}}
+
+  .maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .maphint{font-size:12.5px;color:var(--muted);font-weight:400}
+  #mapLegend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--line);font-size:12.5px}
+  #mapLegend:empty{display:none;border:none;padding:0}
+  #mapLegend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+  svg.map{display:block;width:100%;height:auto;background:#F5F7F8;cursor:crosshair}
+  .land{fill:#DCE3E8;stroke:#AEBAC4;stroke-width:1.2}
+  .gridline{stroke:#E1E6EA;stroke-width:1}
+  .leg{stroke:var(--blue);stroke-width:2.6;fill:none;stroke-linejoin:round;stroke-linecap:round}
+  .leg.back{stroke-dasharray:7 5;stroke:#7FA3CC}
+  .pin-b{fill:var(--blue)}
+  .pin-a{fill:var(--amber)}
+  .pin-t{fill:#fff;font-family:var(--display);font-size:14px;font-weight:600;text-anchor:middle}
+  .pin-lbl{font-family:var(--body);font-size:11.5px;fill:var(--ink-soft)}
+  .depot-sq{fill:var(--ink)}
+  .scaletxt{font-family:var(--body);font-size:12px;fill:var(--ink-soft)}
+  .scalebar{stroke:var(--ink);stroke-width:2.5}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  thead th{text-align:left;font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:8px 12px;border-bottom:2px solid var(--ink);white-space:nowrap}
+  thead th.r,td.r{text-align:right}
+  tbody td{padding:9px 12px;border-bottom:1px solid #EEF1F3;vertical-align:top}
+  tbody tr.done{color:#9AA5AF}
+  tbody tr.done .dest{text-decoration:line-through}
+  .seq{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;background:var(--blue);color:#fff;border-radius:2px;font-family:var(--display);font-weight:600;font-size:15px}
+  tr.done .seq{background:var(--green)}
+  .dest{font-weight:600}
+  .sub{font-size:12px;color:var(--muted)}
+  .eta{font-family:var(--display);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+  .km{font-family:var(--display);font-size:16px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .tick{background:#fff;border:1px solid var(--line);border-radius:2px;padding:4px 9px;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;margin-left:5px}
+  .tick:hover{background:#F4F6F8}
+  .tick.learn{border-color:var(--blue);color:var(--blue)}
+  .tick.learn:hover{background:#EEF4FB}
+
+  .bookrow{display:flex;align-items:center;gap:9px;padding:8px 14px;border-bottom:1px solid #EEF1F3;font-size:13.5px}
+  .bookrow:last-child{border-bottom:none}
+  .bookrow .nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .coord{font-family:var(--display);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .veh-row{display:flex;align-items:center;gap:9px;padding:8px 14px;border-bottom:1px solid #EEF1F3;font-size:13.5px}
+  .veh-row:last-child{border-bottom:none}
+  .veh-dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .veh-nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .veh-cap{font-family:var(--display);font-size:13px;color:var(--muted);white-space:nowrap}
+
+  .settings{border-top:1px solid var(--line);background:#FAFBFC;padding:12px 14px}
+  .settings h3{font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 9px}
+  .hint{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.5}
+  .roadstat{font-size:12.5px;margin-top:8px;min-height:1.4em}
+  .roadstat.ok{color:var(--green)}
+  .roadstat.err{color:var(--amber)}
+  .warn{background:#FDF3E3;border:1px solid #E8CFA0;color:var(--amber);padding:9px 14px;font-size:13px;margin:0 0 1px}
+  .vehsec{border-top:2px solid var(--ink)}
+  .vehsec:first-child{border-top:none}
+  .vehsec h3{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:16px;font-weight:600;padding:11px 14px;margin:0;background:#FAFBFC;border-bottom:1px solid var(--line)}
+  .vehsec h3 .cap{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:500}
+  .aggwrap{border-top:2px solid var(--ink)}
+  label.chk{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:0}
+  label.chk input{width:auto}
+  footer{padding:8px 20px 26px;text-align:center;color:var(--muted);font-size:12.5px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ROUTER</h1>
+  <span class="sub">Sevkiyat rota planlayıcı</span>
+  <span class="spacer"></span>
+  <span class="clock num" id="clock"></span>
+</header>
+
+<div class="wrap">
+<div>
+  <section class="panel">
+    <h2>Durak ekle</h2>
+    <div class="pad">
+      <div class="modebar" role="group" aria-label="Dağıtım tipi">
+        <button id="mIntercity" aria-pressed="true">Şehirler arası</button>
+        <button id="mCity" aria-pressed="false">Şehir içi</button>
+      </div>
+
+      <div class="field">
+        <label for="depot">Çıkış deposu</label>
+        <select id="depot"></select>
+        <div id="depotGpsWrap" style="margin-top:7px;display:none">
+          <button class="btn-gps" id="depotGps">Depoyu bulunduğum konum yap</button>
+          <div class="gpsline" id="depotInfo"></div>
+        </div>
+      </div>
+
+      <div class="field" id="cityField">
+        <label for="city">Teslimat ili</label>
+        <select id="city"></select>
+      </div>
+
+      <div class="field">
+        <label for="addr">Alıcı / adres <span class="opt" id="addrHint">— isteğe bağlı</span></label>
+        <input id="addr" placeholder="Örn. Kaya Ticaret, Sanayi Mah." autocomplete="off">
+        <div class="gpsline" id="bookHit"></div>
+      </div>
+
+      <div class="field" id="coordField" style="display:none">
+        <label for="coords">Konum <span class="opt">— GPS veya Google Maps koordinatı</span></label>
+        <input id="coords" placeholder="38.674, 39.222" autocomplete="off">
+        <button class="btn-gps" id="stopGps" style="margin-top:7px">Bulunduğum konumu al</button>
+        <div class="gpsline" id="stopInfo"></div>
+        <div class="err" id="gpsErr"></div>
+      </div>
+
+      <div class="row2 field">
+        <div><label for="weight">Ağırlık (kg)</label><input id="weight" type="number" min="0" step="1" placeholder="0"></div>
+        <div><label for="phone">Telefon</label><input id="phone" placeholder="05__ ___ __ __"></div>
+      </div>
+
+      <div class="field" id="vehField" style="display:none">
+        <label for="stopVeh">Araç <span class="opt">— boş bırakılırsa otomatik dağıtılır</span></label>
+        <select id="stopVeh"></select>
+      </div>
+
+      <button class="btn-primary" id="add">Durağı listeye ekle</button>
+      <div class="btnbar">
+        <button class="btn-ghost" id="demo">Örnek sevkiyat</button>
+        <button class="btn-ghost" id="clear">Listeyi boşalt</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Araçlar <span class="count num" id="vehCnt">0</span></h2>
+    <div id="vehList"></div>
+    <div class="pad" style="border-top:1px solid var(--line)">
+      <div class="row2" style="margin-bottom:8px">
+        <input id="vehName" placeholder="Araç/şoför adı">
+        <input id="vehCap" type="number" min="0" step="1" placeholder="Kapasite kg (0=sınırsız)">
+      </div>
+      <div class="btnbar">
+        <button class="btn-ghost" id="vehAdd">Araç ekle</button>
+        <button class="btn-ghost" id="vehAuto">Otomatik dağıt</button>
+      </div>
+      <div class="hint" style="margin:9px 0 0">Birden çok araç tanımlarsanız duraklar depoya olan yönlerine ve araç kapasitesine göre otomatik bölüştürülür. Bir durağı elle başka bir araca taşımak için durak satırındaki araç seçiciyi kullanın, sonra <strong>Rotayı planla</strong>'ya basın.</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Bugünün durakları <span class="count num" id="cnt">0</span></h2>
+    <ul class="stops" id="list"></ul>
+    <div class="pad" style="border-top:1px solid var(--line)">
+      <button class="btn-go" id="calc" disabled>Rotayı planla</button>
+      <div class="roadstat" id="roadStat"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="bookPanel" style="display:none">
+    <h2>Adres defteri <span class="count num" id="bookCnt">0</span></h2>
+    <div id="bookList"></div>
+    <div class="pad" style="border-top:1px solid var(--line);padding-top:10px">
+      <div class="hint" style="margin:0">Şoför kapıda "konumu öğret" dediğinde o müşterinin gerçek noktası buraya kaydedilir. Bir dahaki sefere alıcı adını yazmanız yeter.</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="settings">
+      <h3>Sürüş ve maliyet</h3>
+      <div class="row3">
+        <div><label for="startTime">Çıkış</label><input id="startTime" type="time" value="08:30"></div>
+        <div><label for="speed">Ort. hız</label><input id="speed" type="number" value="62" min="5"></div>
+        <div><label for="service">Durak dk</label><input id="service" type="number" value="12" min="0"></div>
+      </div>
+      <div class="row3" style="margin-top:9px">
+        <div><label for="cons">lt/100km</label><input id="cons" type="number" value="24" min="1" step="0.5"></div>
+        <div><label for="price">Yakıt ₺/lt</label><input id="price" type="number" value="52" min="1" step="0.5"></div>
+        <div><label for="ret">Depoya dönüş</label><select id="ret"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+      </div>
+      <div class="field" style="margin:12px 0 0">
+        <label class="chk" for="useRoad"><input type="checkbox" id="useRoad"> Gerçek yol verisi kullan (OSRM)</label>
+        <div class="hint" id="roadHint" style="margin-top:6px"></div>
+      </div>
+      <div class="hint">Bu ayarlar tüm araçlar için ortak kullanılır.</div>
+      <div class="hint" id="factorHint"></div>
+    </div>
+  </section>
+</div>
+
+<div>
+  <div id="board"></div>
+  <section class="panel">
+    <h2 class="maphead"><span id="mapTitle">Rota haritası</span><span class="maphint" id="mapHint"></span></h2>
+    <div id="mapLegend"></div>
+    <svg class="map" id="map" viewBox="0 0 1000 438" role="img" aria-label="Rota haritası"></svg>
+  </section>
+  <section class="panel">
+    <h2>Sevkiyat listesi<span class="maphint" id="manifestHint"></span></h2>
+    <div id="manifest"></div>
+  </section>
+</div>
+</div>
+
+<footer>Router · rota planlama denemesi · duraklar, araçlar ve ayarlar bu tarayıcıda saklanır</footer>
+
+<script>
+/* ============ VERİ ============ */
+const CITIES = [
+["Adana",37.00,35.32],["Adıyaman",37.76,38.28],["Afyonkarahisar",38.76,30.54],["Ağrı",39.72,43.05],
+["Aksaray",38.37,34.03],["Amasya",40.65,35.83],["Ankara",39.93,32.86],["Antalya",36.90,30.70],
+["Ardahan",41.11,42.70],["Artvin",41.18,41.82],["Aydın",37.85,27.84],["Balıkesir",39.65,27.88],
+["Bartın",41.64,32.34],["Batman",37.89,41.13],["Bayburt",40.26,40.23],["Bilecik",40.14,29.98],
+["Bingöl",38.88,40.50],["Bitlis",38.40,42.11],["Bolu",40.74,31.61],["Burdur",37.72,30.29],
+["Bursa",40.19,29.06],["Çanakkale",40.15,26.41],["Çankırı",40.60,33.62],["Çorum",40.55,34.95],
+["Denizli",37.78,29.09],["Diyarbakır",37.91,40.24],["Düzce",40.84,31.16],["Edirne",41.68,26.56],
+["Elazığ",38.68,39.22],["Erzincan",39.75,39.49],["Erzurum",39.90,41.27],["Eskişehir",39.78,30.52],
+["Gaziantep",37.07,37.38],["Giresun",40.91,38.39],["Gümüşhane",40.46,39.48],["Hakkari",37.57,43.74],
+["Hatay",36.20,36.16],["Iğdır",39.92,44.04],["Isparta",37.76,30.55],["İstanbul",41.01,28.98],
+["İzmir",38.42,27.14],["Kahramanmaraş",37.58,36.93],["Karabük",41.20,32.62],["Karaman",37.18,33.22],
+["Kars",40.60,43.09],["Kastamonu",41.38,33.78],["Kayseri",38.73,35.49],["Kilis",36.72,37.12],
+["Kırıkkale",39.85,33.51],["Kırklareli",41.73,27.22],["Kırşehir",39.15,34.16],["Kocaeli",40.77,29.94],
+["Konya",37.87,32.48],["Kütahya",39.42,29.99],["Malatya",38.35,38.31],["Manisa",38.61,27.43],
+["Mardin",37.31,40.74],["Mersin",36.80,34.63],["Muğla",37.22,28.36],["Muş",38.73,41.49],
+["Nevşehir",38.62,34.71],["Niğde",37.97,34.68],["Ordu",40.98,37.88],["Osmaniye",37.07,36.25],
+["Rize",41.02,40.52],["Sakarya",40.76,30.38],["Samsun",41.29,36.33],["Siirt",37.93,41.94],
+["Sinop",42.03,35.15],["Sivas",39.75,37.02],["Şanlıurfa",37.16,38.80],["Şırnak",37.52,42.45],
+["Tekirdağ",40.98,27.51],["Tokat",40.31,36.55],["Trabzon",41.00,39.72],["Tunceli",39.11,39.55],
+["Uşak",38.68,29.41],["Van",38.49,43.38],["Yalova",40.66,29.28],["Yozgat",39.82,34.81],
+["Zonguldak",41.46,31.79]];
+
+const BORDER = [
+[26.35,41.72],[26.60,41.35],[27.55,42.05],[28.00,41.98],[28.98,41.20],[29.90,41.20],[31.40,41.35],
+[33.00,42.03],[35.15,42.03],[36.35,41.30],[38.40,40.92],[39.72,41.00],[41.15,41.40],[41.55,41.52],
+[42.85,41.55],[43.45,41.10],[43.60,40.10],[44.80,39.65],[44.30,38.35],[44.55,37.75],[44.20,37.30],
+[42.90,37.32],[42.35,37.10],[41.20,37.10],[40.20,36.90],[38.80,36.70],[37.50,36.65],[36.65,36.25],
+[36.15,35.80],[35.90,36.30],[34.60,36.75],[33.70,36.10],[32.80,36.00],[31.50,36.30],[30.60,36.25],
+[29.70,36.15],[28.20,36.65],[27.30,37.05],[27.20,38.00],[26.75,38.40],[26.90,39.00],[26.20,39.60],
+[26.20,40.10],[26.70,40.40],[26.20,40.60]];
+
+const MW=1000, MH=438, ASPECT=MW/MH;
+const TR={lon0:25.4,lon1:45.4,lat0:35.6,lat1:42.4};
+const OSRM_BASE="https://router.project-osrm.org";
+const PALETTE=["#0B4F9E","#0F6B47","#B8760A","#9E2B1F","#6A3FA0","#0E7C86","#8A4B08","#3D5AA6"];
+const STORAGE_KEY="router_state_v1";
+
+/* ============ DURUM ============ */
+let mode="intercity";            // "intercity" | "city"
+let stops=[], uid=1;
+let vehicles=[], vuid=1;         // {id,name,cap} — cap kg, 0 = sınırsız
+let book={};                     // alıcı adı -> {lat,lng,acc}
+let pending=null;                // form için yakalanan GPS
+let depotOverride=null;          // GPS ile ayarlanan depo
+let proj=null;
+let plans=null;                  // {byVehicle,aggregate,depot,back,unassigned}
+let useRoad=false;               // gerçek yol verisi (OSRM) kullan
+let realMatrix=null;             // {pointKey:{pointKey:km}} — OSRM'den gelen mesafe matrisi
+let roadStatus="";                // "" | "loading" | "ok" | "error"
+
+const $=id=>document.getElementById(id);
+const norm=s=>s.trim().toLocaleLowerCase("tr").replace(/\s+/g," ");
+const fmt=(n,d=0)=>n.toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const hhmm=m=>{m=Math.round(m);const h=Math.floor(m/60)%24;return String(h).padStart(2,"0")+":"+String(m%60).padStart(2,"0")};
+const dur=m=>{m=Math.round(m);const h=Math.floor(m/60);return h?h+" sa "+(m%60)+" dk":m+" dk"};
+
+/* ============ MESAFE ============ */
+const factor=()=>mode==="city"?1.42:1.32;
+function haversine(a,b){
+  const R=6371,rad=Math.PI/180;
+  const dLat=(b.lat-a.lat)*rad,dLng=(b.lng-a.lng)*rad;
+  const s=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+}
+function pointKey(p){ return p.isDepot ? "D" : p.id; }
+function roadKm(a,b){
+  if(useRoad && realMatrix){
+    const row=realMatrix[pointKey(a)];
+    if(row && row[pointKey(b)]!=null) return row[pointKey(b)];
+  }
+  return haversine(a,b)*factor();
+}
+
+/* ============ GERÇEK YOL VERİSİ (OSRM) ============ */
+function invalidateRoadMatrix(){ realMatrix=null; roadStatus=""; }
+async function fetchRoadMatrix(points){
+  const coords=points.map(p=>p.lng.toFixed(6)+","+p.lat.toFixed(6)).join(";");
+  const res=await fetch(`${OSRM_BASE}/table/v1/driving/${coords}?annotations=distance`);
+  if(!res.ok) throw new Error("OSRM table HTTP "+res.status);
+  const data=await res.json();
+  if(data.code!=="Ok"||!data.distances) throw new Error("OSRM table: "+data.code);
+  const m={};
+  points.forEach((p,i)=>{
+    const ka=pointKey(p); m[ka]={};
+    points.forEach((q,j)=>{ m[ka][pointKey(q)]=data.distances[i][j]/1000; });
+  });
+  return m;
+}
+async function fetchRoadGeometry(orderedPoints){
+  if(orderedPoints.length<2) return null;
+  const coords=orderedPoints.map(p=>p.lng.toFixed(6)+","+p.lat.toFixed(6)).join(";");
+  const res=await fetch(`${OSRM_BASE}/route/v1/driving/${coords}?overview=full&geometries=geojson`);
+  if(!res.ok) throw new Error("OSRM route HTTP "+res.status);
+  const data=await res.json();
+  if(data.code!=="Ok"||!data.routes||!data.routes.length) throw new Error("OSRM route: "+data.code);
+  return data.routes[0].geometry.coordinates; // [[lng,lat],...]
+}
+function renderRoadStatus(){
+  const el=$("roadStat");
+  if(!useRoad){ el.textContent=""; el.className="roadstat"; return; }
+  if(roadStatus==="loading"){ el.textContent="Gerçek yol verisi alınıyor…"; el.className="roadstat"; }
+  else if(roadStatus==="ok"){ el.textContent="Gerçek karayolu mesafesi kullanılıyor (OSRM)."; el.className="roadstat ok"; }
+  else if(roadStatus==="error"){ el.textContent="Yol verisi alınamadı (bağlantı yok veya servise erişilemedi) — kuş uçuşu mesafeye dönüldü."; el.className="roadstat err"; }
+  else { el.textContent=""; el.className="roadstat"; }
+}
+function updateRoadHint(){
+  $("roadHint").textContent = useRoad
+    ? `Açık: "Rotayı planla" tıklandığında ücretsiz OSRM demo servisinden gerçek karayolu mesafesi ve güzergâhı alınır. Bağlantı yoksa otomatik olarak kuş uçuşu hesaba dönülür.`
+    : "Kapalı: mesafeler kuş uçuşu değeri ilgili katsayıyla düzeltilir.";
+}
+
+/* ============ GPS ============ */
+function capture(target){
+  $("gpsErr").textContent="";
+  if(!navigator.geolocation){
+    $("gpsErr").textContent="Bu tarayıcı konum servisini desteklemiyor. Koordinatı Google Maps'ten kopyalayıp yapıştırabilirsiniz.";
+    return;
+  }
+  const btn = target==="depot" ? $("depotGps") : $("stopGps");
+  const old = btn.textContent; btn.textContent="Konum alınıyor…"; btn.disabled=true;
+  navigator.geolocation.getCurrentPosition(p=>{
+    btn.textContent=old; btn.disabled=false;
+    const g={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy};
+    if(target==="depot"){
+      depotOverride={id:"D",name:"Depo (GPS)",lat:g.lat,lng:g.lng,isDepot:true};
+      $("depotInfo").innerHTML=accBadge(g.acc)+`<span class="coord">${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}</span>`;
+      plans=null; invalidateRoadMatrix(); renderAll();
+    }else{
+      pending=g;
+      $("coords").value=g.lat.toFixed(6)+", "+g.lng.toFixed(6);
+      $("stopInfo").innerHTML=accBadge(g.acc)+"<span>konum alındı</span>";
+    }
+  },e=>{
+    btn.textContent=old; btn.disabled=false;
+    const msg={1:"Konum izni verilmedi. Tarayıcı ayarlarından izin verin ya da koordinatı elle yapıştırın.",
+               2:"Konum alınamadı (sinyal yok). Açık alanda tekrar deneyin veya koordinatı elle yapıştırın.",
+               3:"Konum isteği zaman aşımına uğradı. Tekrar deneyin."}[e.code]
+               || "Konum alınamadı. Koordinatı Google Maps'ten kopyalayıp yapıştırabilirsiniz.";
+    $("gpsErr").textContent=msg;
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+function accBadge(a){
+  if(a==null) return "";
+  const bad=a>60;
+  return `<span class="acc ${bad?"bad":""}">±${Math.round(a)} m</span>`;
+}
+function parseCoords(t){
+  if(!t) return null;
+  const m=t.match(/(-?\d{1,2}[.,]\d{3,})\D+(-?\d{1,3}[.,]\d{3,})/);
+  if(!m) return null;
+  const lat=parseFloat(m[1].replace(",",".")), lng=parseFloat(m[2].replace(",","."));
+  if(isNaN(lat)||isNaN(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
+  return {lat,lng};
+}
+
+/* ============ SEÇİCİLER ============ */
+function fillSelects(){
+  const o=CITIES.map(c=>`<option value="${c[0]}">${c[0]}</option>`).join("");
+  $("depot").innerHTML=o; $("city").innerHTML=o;
+  $("depot").value="Elazığ"; $("city").value="Malatya";
+}
+const cityByName=n=>CITIES.find(c=>c[0]===n);
+function depot(){
+  if(mode==="city"&&depotOverride) return depotOverride;
+  const c=cityByName($("depot").value)||CITIES[0];
+  return {id:"D",name:c[0],lat:c[1],lng:c[2],isDepot:true};
+}
+
+/* ============ ARAÇLAR ============ */
+function defaultVehicles(){ return [{id:1,name:"Araç 1",cap:0}]; }
+const vehColor=v=>PALETTE[Math.max(0,vehicles.findIndex(x=>x.id===v.id))%PALETTE.length];
+
+/* ============ ROTA MOTORU ============ */
+function tourLength(seq,back){
+  let t=0;
+  for(let i=0;i<seq.length-1;i++) t+=roadKm(seq[i],seq[i+1]);
+  if(back&&seq.length>1) t+=roadKm(seq[seq.length-1],seq[0]);
+  return t;
+}
+function nearestNeighbour(d,pts){
+  const left=pts.slice(),seq=[d]; let cur=d;
+  while(left.length){
+    let bi=0,bd=Infinity;
+    left.forEach((p,i)=>{const x=roadKm(cur,p); if(x<bd){bd=x;bi=i;}});
+    cur=left.splice(bi,1)[0]; seq.push(cur);
+  }
+  return seq;
+}
+function twoOpt(seq,back){
+  let best=seq.slice(),improved=true,g=0;
+  while(improved&&g++<80){
+    improved=false;
+    for(let i=1;i<best.length-1;i++)
+      for(let k=i+1;k<best.length;k++){
+        const c=best.slice(0,i).concat(best.slice(i,k+1).reverse(),best.slice(k+1));
+        if(tourLength(c,back)<tourLength(best,back)-1e-9){best=c;improved=true;}
+      }
+  }
+  return best;
+}
+
+// Duraklar birden çok araca bölüştürülür: önce elle atananlar (kapasite izin verdiği sürece),
+// kalanlar depoya göre açısal sırayla (sweep) araçlara kapasite dolana kadar dağıtılır.
+function buildPlans(){
+  const d=depot();
+  const active=stops.filter(s=>!s.done);
+  if(!active.length) return null;
+  const back=$("ret").value==="1";
+  const speed=Math.max(5,+$("speed").value||62);
+  const service=Math.max(0,+$("service").value||0);
+  const cons=Math.max(0.1,+$("cons").value||24);
+  const price=Math.max(0.1,+$("price").value||52);
+  const vlist=vehicles.length?vehicles:defaultVehicles();
+
+  const load={}; vlist.forEach(v=>load[v.id]=0);
+  const assignOf={};
+  active.forEach(s=>{
+    if(s.vehicleId!=null && vlist.some(v=>v.id===s.vehicleId)){
+      assignOf[s.id]=s.vehicleId; load[s.vehicleId]+=s.weight||0;
+    }
+  });
+  const rest=active.filter(s=>assignOf[s.id]==null);
+  const withAngle=rest.map(s=>({s,ang:Math.atan2(s.lat-d.lat,s.lng-d.lng)})).sort((a,b)=>a.ang-b.ang);
+  let vi=0; const unassigned=[];
+  withAngle.forEach(({s})=>{
+    let tries=0, placed=false;
+    while(tries<vlist.length){
+      const v=vlist[vi%vlist.length];
+      if(v.cap<=0 || load[v.id]+(s.weight||0)<=v.cap){
+        assignOf[s.id]=v.id; load[v.id]+=s.weight||0; placed=true; break;
+      }
+      vi++; tries++;
+    }
+    if(!placed) unassigned.push(s);
+  });
+
+  const measure=(seq,back)=>{ const km=tourLength(seq,back); return {km,min:km/speed*60+service*(seq.length-1),fuel:km/100*cons*price}; };
+  const byVehicle=[];
+  vlist.forEach(v=>{
+    const pts=active.filter(s=>assignOf[s.id]===v.id);
+    if(!pts.length) return;
+    const optimised=twoOpt(nearestNeighbour(d,pts),back);
+    const manualOrder=[d].concat(pts);
+    const A=measure(optimised,back), B=measure(manualOrder,back);
+    const [hh,mm]=($("startTime").value||"08:30").split(":").map(Number);
+    let clock=hh*60+mm, run=0; const legs=[];
+    for(let i=1;i<optimised.length;i++){
+      const km=roadKm(optimised[i-1],optimised[i]);
+      run+=km; clock+=km/speed*60;
+      legs.push({stop:optimised[i],km,cum:run,eta:clock});
+      clock+=service;
+    }
+    let backLeg=null;
+    if(back){
+      const km=roadKm(optimised[optimised.length-1],d);
+      backLeg={km,eta:clock+km/speed*60,cum:run+km};
+    }
+    byVehicle.push({vehicle:v,seq:optimised,legs,backLeg,back,A,B});
+  });
+
+  const sum=(arr,which,k)=>arr.reduce((t,p)=>t+p[which][k],0);
+  const aggregate={
+    A:{km:sum(byVehicle,"A","km"),min:sum(byVehicle,"A","min"),fuel:sum(byVehicle,"A","fuel")},
+    B:{km:sum(byVehicle,"B","km"),min:sum(byVehicle,"B","min"),fuel:sum(byVehicle,"B","fuel")}
+  };
+  return {byVehicle, aggregate, depot:d, back, unassigned};
+}
+
+async function planRoute(){
+  const btn=$("calc"), original=btn.textContent;
+  const active=stops.filter(s=>!s.done);
+  if(!active.length){ plans=null; renderAll(); return; }
+  btn.disabled=true;
+  roadStatus = useRoad ? "loading" : "";
+  renderRoadStatus();
+  if(useRoad){
+    btn.textContent="Yol verisi alınıyor…";
+    try{
+      const d=depot();
+      realMatrix=await fetchRoadMatrix([d,...active]);
+      roadStatus="ok";
+    }catch(err){
+      console.warn("OSRM matrisi alınamadı:",err);
+      realMatrix=null; roadStatus="error";
+    }
+    renderRoadStatus();
+  }
+  btn.textContent="Hesaplanıyor…";
+  plans=buildPlans();
+  if(useRoad && roadStatus==="ok" && plans){
+    for(const p of plans.byVehicle){
+      try{
+        const pts = p.back ? p.seq.concat([plans.depot]) : p.seq;
+        p.geometry = pts.length>1 ? await fetchRoadGeometry(pts) : null;
+      }catch(err){
+        console.warn("OSRM güzergâh alınamadı:",err);
+        p.geometry=null;
+      }
+    }
+  }
+  btn.textContent=original;
+  btn.disabled=stops.filter(s=>!s.done).length<1;
+  renderAll();
+}
+
+/* ============ PROJEKSİYON ============ */
+function makeProj(){
+  if(mode==="intercity"){
+    return {
+      x:lon=>(lon-TR.lon0)/(TR.lon1-TR.lon0)*MW,
+      y:lat=>(TR.lat1-lat)/(TR.lat1-TR.lat0)*MH,
+      city:false
+    };
+  }
+  const pts=[depot()].concat(stops);
+  let laMin=Infinity,laMax=-Infinity,loMin=Infinity,loMax=-Infinity;
+  pts.forEach(p=>{laMin=Math.min(laMin,p.lat);laMax=Math.max(laMax,p.lat);
+                  loMin=Math.min(loMin,p.lng);loMax=Math.max(loMax,p.lng);});
+  let cLat=(laMin+laMax)/2, cLon=(loMin+loMax)/2;
+  let spanLat=Math.max(laMax-laMin,0.006)*1.25;
+  let spanLon=Math.max(loMax-loMin,0.008)*1.25;
+  const kLat=111320, kLon=111320*Math.cos(cLat*Math.PI/180);
+  let mY=spanLat*kLat, mX=spanLon*kLon;
+  if(mX/mY<ASPECT) mX=mY*ASPECT; else mY=mX/ASPECT;
+  spanLat=mY/kLat; spanLon=mX/kLon;
+  return {
+    x:lon=>(lon-(cLon-spanLon/2))/spanLon*MW,
+    y:lat=>((cLat+spanLat/2)-lat)/spanLat*MH,
+    city:true, mPerPx:mX/MW, kLon, kLat
+  };
+}
+function niceStep(m){
+  const p=Math.pow(10,Math.floor(Math.log10(m))), r=m/p;
+  return (r>=5?5:r>=2?2:1)*p;
+}
+
+/* ============ ÇİZİM ============ */
+function vehSelectHtml(s){
+  if(vehicles.length<=1) return "";
+  const opts=`<option value="">Otomatik</option>`+vehicles.map(v=>`<option value="${v.id}" ${s.vehicleId===v.id?"selected":""}>${v.name}</option>`).join("");
+  return `<select class="stop-veh" data-vehsel="${s.id}">${opts}</select>`;
+}
+function renderList(){
+  $("cnt").textContent=stops.length;
+  $("calc").disabled=stops.filter(s=>!s.done).length<1;
+  if(!stops.length){
+    $("list").innerHTML=`<li><div class="empty">Henüz durak yok.<br>Sol taraftan ekleyin veya örnek sevkiyatı yükleyin.</div></li>`;
+    return;
+  }
+  $("list").innerHTML=stops.map(s=>`
+    <li>
+      <span class="${s.exact?"exact":"approx"}" title="${s.exact?"kesin konum":"yaklaşık konum"}"></span>
+      <div class="stop-main">
+        <div class="stop-city">${s.name}</div>
+        <div class="stop-meta">${[s.detail,s.weight?fmt(s.weight)+" kg":"",s.phone].filter(Boolean).join(" · ")||"—"}</div>
+      </div>
+      ${vehSelectHtml(s)}
+      <button class="btn-x" data-del="${s.id}" aria-label="${s.name} durağını sil">✕</button>
+    </li>`).join("");
+}
+
+function renderBook(){
+  const keys=Object.keys(book);
+  $("bookPanel").style.display=(mode==="city")?"":"none";
+  $("bookCnt").textContent=keys.length;
+  if(!keys.length){
+    $("bookList").innerHTML=`<div class="empty">Defter boş. Bir teslimatta "konumu öğret" dediğinizde o alıcı buraya kaydedilir.</div>`;
+    return;
+  }
+  $("bookList").innerHTML=keys.map(k=>`
+    <div class="bookrow">
+      <span class="exact"></span>
+      <span class="nm">${book[k].label}</span>
+      <span class="coord">${book[k].lat.toFixed(5)}, ${book[k].lng.toFixed(5)}</span>
+      <button class="btn-x" data-book="${k}" aria-label="${book[k].label} kaydını sil">✕</button>
+    </div>`).join("");
+}
+
+function renderVehicles(){
+  $("vehCnt").textContent=vehicles.length;
+  $("vehList").innerHTML=vehicles.map(v=>{
+    const load=stops.filter(s=>!s.done&&s.vehicleId===v.id).reduce((t,s)=>t+(s.weight||0),0);
+    const capTxt=v.cap>0 ? `${fmt(load)} / ${fmt(v.cap)} kg` : `${fmt(load)} kg · sınırsız`;
+    return `<div class="veh-row">
+      <span class="veh-dot" style="background:${vehColor(v)}"></span>
+      <span class="veh-nm">${v.name}</span>
+      <span class="veh-cap">${capTxt}</span>
+      <button class="btn-x" data-vehdel="${v.id}" aria-label="${v.name} sil">✕</button>
+    </div>`;
+  }).join("");
+  $("vehField").style.display = vehicles.length>1 ? "" : "none";
+  const cur=$("stopVeh").value;
+  $("stopVeh").innerHTML=`<option value="">Otomatik</option>`+vehicles.map(v=>`<option value="${v.id}">${v.name}</option>`).join("");
+  if(vehicles.some(v=>String(v.id)===cur)) $("stopVeh").value=cur;
+}
+
+function renderBoard(){
+  if(!plans || !plans.byVehicle.length){$("board").innerHTML="";return;}
+  const dec=mode==="city"?1:0;
+  const {A,B}=plans.aggregate;
+  const dKm=B.km-A.km,dMin=B.min-A.min,dTl=B.fuel-A.fuel;
+  const pct=B.km>0?Math.round(dKm/B.km*100):0;
+  const w=(v,max)=>max>0?Math.max(3,Math.round(v/max*100)):0;
+  const nveh=plans.byVehicle.length;
+  const stopCount=stops.filter(s=>!s.done).length;
+  const roadNote = useRoad ? (roadStatus==="ok" ? " · gerçek yol verisi" : roadStatus==="error" ? " · yol verisi alınamadı, kuş uçuşu kullanıldı" : "") : "";
+  $("board").innerHTML=`
+    <div class="board">
+      <div class="lead">Elle sıralanan tur${nveh>1?"lar":""} ile Router'ın planladığı ${nveh>1?nveh+" araçlık ":""}tur karşılaştırması — ${stopCount} durak${plans.back?", depoya dönüşle":""}${roadNote}.</div>
+      <div class="savegrid">
+        <div class="save ${dKm>0?"pos":""}"><div class="big">${fmt(dKm,dec)}<span class="unit">km</span></div><div class="cap">daha az yol</div></div>
+        <div class="save ${dMin>0?"pos":""}"><div class="big">${fmt(dMin/60,1)}<span class="unit">saat</span></div><div class="cap">daha kısa süre</div></div>
+        <div class="save ${dTl>0?"pos":""}"><div class="big">₺${fmt(dTl)}</div><div class="cap">günlük yakıt tasarrufu</div></div>
+      </div>
+      <div class="bars">
+        <div class="bar-row"><span class="lbl">Elle sıralama</span><span class="bar-track"><span class="bar-fill before" style="width:100%"></span></span><span class="bar-val">${fmt(B.km,dec)} km</span></div>
+        <div class="bar-row"><span class="lbl">Router planı</span><span class="bar-track"><span class="bar-fill after" style="width:${w(A.km,B.km)}%"></span></span><span class="bar-val">${fmt(A.km,dec)} km</span></div>
+        <div class="lead" style="margin:10px 0 0">Yol ${pct}% kısaldı. Ayda 26 sevkiyat günü için yaklaşık <strong style="color:#5FD3A0">₺${fmt(dTl*26)}</strong> yakıt farkı.</div>
+      </div>
+    </div>`;
+}
+
+function renderMap(){
+  proj=makeProj();
+  const X=proj.x, Y=proj.y;
+  let svg="";
+
+  if(proj.city){
+    for(let i=1;i<8;i++){
+      const gx=i*MW/8, gy=i*MH/8;
+      svg+=`<line class="gridline" x1="${gx}" y1="0" x2="${gx}" y2="${MH}"></line>`;
+      if(i<8) svg+=`<line class="gridline" x1="0" y1="${gy}" x2="${MW}" y2="${gy}"></line>`;
+    }
+    const target=proj.mPerPx*MW/5, step=niceStep(target), lenPx=step/proj.mPerPx;
+    const bx=26, by=MH-26;
+    svg+=`<line class="scalebar" x1="${bx}" y1="${by}" x2="${bx+lenPx}" y2="${by}"></line>
+          <line class="scalebar" x1="${bx}" y1="${by-5}" x2="${bx}" y2="${by+5}"></line>
+          <line class="scalebar" x1="${bx+lenPx}" y1="${by-5}" x2="${bx+lenPx}" y2="${by+5}"></line>
+          <text class="scaletxt" x="${bx}" y="${by-11}">${step>=1000?fmt(step/1000,1)+" km":fmt(step)+" m"}</text>`;
+  }else{
+    svg+=`<polygon class="land" points="${BORDER.map(p=>X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join(" ")}"></polygon>`;
+  }
+
+  const d=depot();
+  const drawDepot=()=>`<rect class="depot-sq" x="${X(d.lng)-9}" y="${Y(d.lat)-9}" width="18" height="18" rx="2"></rect>
+      <text class="pin-t" x="${X(d.lng)}" y="${Y(d.lat)+5}">D</text>
+      <text class="pin-lbl" x="${X(d.lng)}" y="${Y(d.lat)+24}" text-anchor="middle">${d.name}</text>`;
+
+  let legend="";
+  if(plans && plans.byVehicle.length){
+    plans.byVehicle.forEach(p=>{
+      const color=vehColor(p.vehicle);
+      if(p.geometry && p.geometry.length>1){
+        const pts=p.geometry.map(c=>X(c[0]).toFixed(1)+","+Y(c[1]).toFixed(1)).join(" ");
+        svg+=`<polyline class="leg" style="stroke:${color}" points="${pts}"></polyline>`;
+      }else{
+        svg+=`<polyline class="leg" style="stroke:${color}" points="${p.seq.map(s=>X(s.lng).toFixed(1)+","+Y(s.lat).toFixed(1)).join(" ")}"></polyline>`;
+        if(p.backLeg){
+          const a=p.seq[p.seq.length-1];
+          svg+=`<polyline class="leg back" style="stroke:${color}" points="${X(a.lng)},${Y(a.lat)} ${X(d.lng)},${Y(d.lat)}"></polyline>`;
+        }
+      }
+    });
+    svg+=drawDepot();
+    plans.byVehicle.forEach(p=>{
+      const color=vehColor(p.vehicle);
+      p.legs.forEach((l,i)=>{
+        const x=X(l.stop.lng),y=Y(l.stop.lat);
+        svg+=`<circle class="${l.stop.exact?"pin-b":"pin-a"}" style="fill:${color}" cx="${x}" cy="${y}" r="11"></circle>
+              <text class="pin-t" x="${x}" y="${y+5}">${i+1}</text>
+              <text class="pin-lbl" x="${x}" y="${y+25}" text-anchor="middle">${l.stop.name}</text>`;
+      });
+    });
+    if(plans.byVehicle.length>1){
+      legend=plans.byVehicle.map(p=>`<span><span class="dot" style="background:${vehColor(p.vehicle)}"></span>${p.vehicle.name}</span>`).join("");
+    }
+  }else{
+    svg+=drawDepot();
+    stops.forEach(s=>{
+      svg+=`<circle cx="${X(s.lng)}" cy="${Y(s.lat)}" r="7" fill="${s.exact?"#7C8A99":"#D9AE6A"}"></circle>
+            <text class="pin-lbl" x="${X(s.lng)}" y="${Y(s.lat)+21}" text-anchor="middle">${s.name}</text>`;
+    });
+  }
+  $("map").innerHTML=svg;
+  $("mapLegend").innerHTML=legend;
+}
+
+function renderManifest(){
+  if(!plans){
+    $("manifest").innerHTML=`<div class="empty">Rota planlanmadı. Durakları ekleyip <strong>Rotayı planla</strong> düğmesine basın.</div>`;
+    $("manifestHint").textContent="";
+    return;
+  }
+  $("manifestHint").textContent = plans.byVehicle.length>1 ? plans.byVehicle.length+" araç" : "";
+  const dec=mode==="city"?1:0;
+  let html="";
+  if(plans.unassigned && plans.unassigned.length){
+    html+=`<div class="warn">${plans.unassigned.length} durak hiçbir araca sığmadı (kapasite yetersiz): ${plans.unassigned.map(s=>s.name).join(", ")}. Araç kapasitesini artırın veya yeni araç ekleyin.</div>`;
+  }
+  if(!plans.byVehicle.length){
+    html+=`<div class="empty">Hiçbir durak bir araca atanamadı.</div>`;
+    $("manifest").innerHTML=html;
+    return;
+  }
+  plans.byVehicle.forEach(p=>{
+    const rows=p.legs.map((l,i)=>`
+      <tr class="${l.stop.done?"done":""}">
+        <td><span class="seq" style="background:${l.stop.done?'var(--green)':vehColor(p.vehicle)}">${l.stop.done?"✓":i+1}</span></td>
+        <td>
+          <div class="dest">${l.stop.name}</div>
+          <div class="sub">${l.stop.exact?"kesin konum":"yaklaşık konum"}${l.stop.detail?" · "+l.stop.detail:""}${l.stop.phone?" · "+l.stop.phone:""}</div>
+        </td>
+        <td class="r"><span class="km">${fmt(l.km,dec)}</span></td>
+        <td class="r"><span class="km">${fmt(l.cum,dec)}</span></td>
+        <td class="r"><span class="eta">${hhmm(l.eta)}</span></td>
+        <td class="r" style="white-space:nowrap">
+          ${mode==="city"?`<button class="tick learn" data-learn="${l.stop.id}">Konumu öğret</button>`:""}
+          <button class="tick" data-done="${l.stop.id}">${l.stop.done?"Geri al":"Teslim et"}</button>
+        </td>
+      </tr>`).join("");
+    const back=p.backLeg?`
+      <tr>
+        <td><span class="seq" style="background:var(--ink-soft)">D</span></td>
+        <td><div class="dest">${plans.depot.name} — depoya dönüş</div><div class="sub">tur kapanışı</div></td>
+        <td class="r"><span class="km">${fmt(p.backLeg.km,dec)}</span></td>
+        <td class="r"><span class="km">${fmt(p.backLeg.cum,dec)}</span></td>
+        <td class="r"><span class="eta">${hhmm(p.backLeg.eta)}</span></td><td></td>
+      </tr>`:"";
+    const last=p.backLeg?p.backLeg.eta:(p.legs[p.legs.length-1]?.eta??0);
+    const litres=p.A.km/100*(+$("cons").value||24);
+    const load=p.legs.reduce((t,l)=>t+(l.stop.weight||0),0);
+    html+=`
+      <div class="vehsec">
+        <h3><span class="veh-dot" style="background:${vehColor(p.vehicle)}"></span>${p.vehicle.name}<span class="cap">${p.legs.length} durak · ${fmt(load)}${p.vehicle.cap>0?" / "+fmt(p.vehicle.cap):""} kg</span></h3>
+        <table>
+          <thead><tr><th style="width:44px">Sıra</th><th>Teslimat noktası</th>
+          <th class="r">Etap km</th><th class="r">Toplam km</th><th class="r">Varış</th><th></th></tr></thead>
+          <tbody>${rows}${back}</tbody>
+        </table>
+        <div class="settings" style="display:flex;gap:26px;flex-wrap:wrap">
+          <div><div class="sub">Yol</div><div class="eta">${fmt(p.A.km,dec)} km</div></div>
+          <div><div class="sub">Süre</div><div class="eta">${dur(p.A.min)}</div></div>
+          <div><div class="sub">Bitiş</div><div class="eta">${hhmm(last)}</div></div>
+          <div><div class="sub">Yakıt</div><div class="eta">${fmt(litres,1)} lt · ₺${fmt(p.A.fuel)}</div></div>
+        </div>
+      </div>`;
+  });
+  if(plans.byVehicle.length>1){
+    const agg=plans.aggregate.A;
+    const totalLoad=stops.filter(s=>!s.done).reduce((t,s)=>t+(s.weight||0),0);
+    html+=`<div class="settings aggwrap" style="display:flex;gap:26px;flex-wrap:wrap">
+      <div><div class="sub">Toplam yol (${plans.byVehicle.length} araç)</div><div class="eta">${fmt(agg.km,dec)} km</div></div>
+      <div><div class="sub">Toplam süre</div><div class="eta">${dur(agg.min)}</div></div>
+      <div><div class="sub">Toplam yakıt</div><div class="eta">₺${fmt(agg.fuel)}</div></div>
+      <div><div class="sub">Toplam yük</div><div class="eta">${fmt(totalLoad)} kg</div></div>
+    </div>`;
+  }
+  $("manifest").innerHTML=html;
+}
+
+function renderAll(){
+  renderList(); renderVehicles(); renderBook(); renderBoard(); renderMap(); renderManifest(); renderRoadStatus();
+  saveState();
+}
+
+/* ============ KALICILIK (localStorage) ============ */
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      mode, stops, vehicles, book, depotOverride, useRoad,
+      settings:{
+        startTime:$("startTime").value, speed:$("speed").value, service:$("service").value,
+        cons:$("cons").value, price:$("price").value, ret:$("ret").value,
+        depot:$("depot").value, city:$("city").value
+      }
+    }));
+  }catch(e){ /* localStorage kullanılamıyor (gizli sekme vb.) — sessizce geç */ }
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const s=JSON.parse(raw);
+    mode = s.mode==="city" ? "city" : "intercity";
+    stops = Array.isArray(s.stops) ? s.stops : [];
+    vehicles = Array.isArray(s.vehicles) && s.vehicles.length ? s.vehicles : defaultVehicles();
+    book = s.book && typeof s.book==="object" ? s.book : {};
+    depotOverride = s.depotOverride || null;
+    useRoad = !!s.useRoad;
+    uid = 1 + stops.reduce((m,x)=>Math.max(m,x.id||0),0);
+    vuid = 1 + vehicles.reduce((m,x)=>Math.max(m,x.id||0),0);
+    if(s.settings){
+      if(s.settings.startTime) $("startTime").value=s.settings.startTime;
+      if(s.settings.speed) $("speed").value=s.settings.speed;
+      if(s.settings.service!=null && s.settings.service!=="") $("service").value=s.settings.service;
+      if(s.settings.cons) $("cons").value=s.settings.cons;
+      if(s.settings.price) $("price").value=s.settings.price;
+      if(s.settings.ret) $("ret").value=s.settings.ret;
+      if(s.settings.depot) $("depot").value=s.settings.depot;
+      if(s.settings.city) $("city").value=s.settings.city;
+    }
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ============ MOD ============ */
+function applyModeUI(m){
+  $("mIntercity").setAttribute("aria-pressed", m==="intercity");
+  $("mCity").setAttribute("aria-pressed", m==="city");
+  const city=m==="city";
+  $("coordField").style.display=city?"":"none";
+  $("depotGpsWrap").style.display=city?"":"none";
+  $("cityField").style.display=city?"none":"";
+  $("addrHint").textContent=city?"— defterden tanınır":"— isteğe bağlı";
+  $("mapTitle").textContent=city?"Şehir içi rota":"Rota haritası";
+  $("mapHint").textContent=city?"Konum GPS'ten veya yapıştırılan koordinattan gelir":"Listede olmayan bir nokta için haritaya tıklayın";
+  $("factorHint").textContent=city
+    ? "Şehir içi mesafeler kuş uçuşu değeri 1,42 katsayısıyla düzeltilir. Kesin konumu olan duraklar mavi, il merkezine düşen yaklaşık duraklar turuncu gösterilir."
+    : "Mesafeler kuş uçuşu değeri 1,32 karayolu katsayısıyla düzeltilir. Gerçek karayolu mesafesi için üstteki \"Gerçek yol verisi kullan\" seçeneğini açabilirsiniz.";
+}
+function setMode(m){
+  if(mode===m) return;
+  mode=m; plans=null; pending=null; stops=[]; depotOverride=null; invalidateRoadMatrix();
+  applyModeUI(m);
+  $("speed").value=m==="city"?26:62;
+  $("service").value=m==="city"?8:12;
+  $("cons").value=m==="city"?13:24;
+  renderAll();
+}
+$("mIntercity").addEventListener("click",()=>setMode("intercity"));
+$("mCity").addEventListener("click",()=>setMode("city"));
+
+/* ============ OLAYLAR ============ */
+$("addr").addEventListener("input",()=>{
+  const k=norm($("addr").value);
+  if(mode==="city"&&k&&book[k]){
+    $("coords").value=book[k].lat.toFixed(6)+", "+book[k].lng.toFixed(6);
+    pending={lat:book[k].lat,lng:book[k].lng,acc:book[k].acc};
+    $("bookHit").innerHTML=`<span class="exact"></span><span>Defterden bulundu — konum hazır</span>`;
+  }else{
+    $("bookHit").innerHTML="";
+  }
+});
+
+function addStop(){
+  let s;
+  const vehicleId = $("stopVeh").value ? +$("stopVeh").value : null;
+  if(mode==="city"){
+    const typed=parseCoords($("coords").value);
+    const g=typed||pending;
+    const label=$("addr").value.trim();
+    if(!g&&!label){ $("gpsErr").textContent="Alıcı adı veya konum girin."; return; }
+    if(g){
+      s={id:uid++,name:label||"Nokta "+(stops.length+1),lat:g.lat,lng:g.lng,
+         detail:label,weight:+$("weight").value||0,phone:$("phone").value.trim(),
+         exact:true,acc:g.acc??null,done:false,vehicleId};
+      if(label) book[norm(label)]={label,lat:g.lat,lng:g.lng,acc:g.acc??null};
+    }else{
+      const c=cityByName($("depot").value)||CITIES[0];
+      s={id:uid++,name:label,lat:c[1],lng:c[2],detail:label,weight:+$("weight").value||0,
+         phone:$("phone").value.trim(),exact:false,acc:null,done:false,vehicleId};
+    }
+    $("coords").value=""; pending=null; $("stopInfo").innerHTML=""; $("gpsErr").textContent="";
+  }else{
+    const c=cityByName($("city").value); if(!c) return;
+    s={id:uid++,name:c[0],lat:c[1],lng:c[2],detail:$("addr").value.trim(),
+       weight:+$("weight").value||0,phone:$("phone").value.trim(),exact:false,acc:null,done:false,vehicleId};
+  }
+  stops.push(s);
+  $("addr").value="";$("weight").value="";$("phone").value="";$("bookHit").innerHTML="";
+  plans=null; renderAll();
+}
+$("add").addEventListener("click",addStop);
+["addr","weight","phone","coords"].forEach(id=>$(id).addEventListener("keydown",e=>{if(e.key==="Enter")addStop();}));
+
+$("depotGps").addEventListener("click",()=>capture("depot"));
+$("stopGps").addEventListener("click",()=>capture("stop"));
+
+$("list").addEventListener("click",e=>{
+  const b=e.target.closest("[data-del]"); if(!b) return;
+  stops=stops.filter(s=>s.id!==+b.dataset.del); plans=null; renderAll();
+});
+$("list").addEventListener("change",e=>{
+  const sel=e.target.closest("[data-vehsel]"); if(!sel) return;
+  const s=stops.find(x=>x.id===+sel.dataset.vehsel); if(!s) return;
+  s.vehicleId = sel.value ? +sel.value : null;
+  plans=null; renderAll();
+});
+$("bookList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-book]"); if(!b) return;
+  delete book[b.dataset.book]; renderBook(); saveState();
+});
+
+$("vehAdd").addEventListener("click",()=>{
+  const name=$("vehName").value.trim() || "Araç "+(vehicles.length+1);
+  const cap=Math.max(0, +$("vehCap").value || 0);
+  vehicles.push({id:vuid++, name, cap});
+  $("vehName").value=""; $("vehCap").value="";
+  plans=null; renderAll();
+});
+$("vehAuto").addEventListener("click",()=>{
+  stops.forEach(s=>{ if(!s.done) s.vehicleId=null; });
+  planRoute();
+});
+$("vehList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-vehdel]"); if(!b) return;
+  if(vehicles.length<=1){ alert("En az bir araç kalmalı."); return; }
+  const id=+b.dataset.vehdel;
+  vehicles=vehicles.filter(v=>v.id!==id);
+  stops.forEach(s=>{ if(s.vehicleId===id) s.vehicleId=null; });
+  plans=null; renderAll();
+});
+
+$("manifest").addEventListener("click",e=>{
+  const done=e.target.closest("[data-done]");
+  if(done){
+    const s=stops.find(x=>x.id===+done.dataset.done);
+    if(s) s.done=!s.done;
+    plans=buildPlans(); renderAll(); return;
+  }
+  const learn=e.target.closest("[data-learn]");
+  if(learn){
+    const s=stops.find(x=>x.id===+learn.dataset.learn); if(!s) return;
+    if(!navigator.geolocation){ alert("Bu tarayıcı konum servisini desteklemiyor."); return; }
+    const old=learn.textContent; learn.textContent="Alınıyor…"; learn.disabled=true;
+    navigator.geolocation.getCurrentPosition(p=>{
+      learn.textContent=old; learn.disabled=false;
+      s.lat=p.coords.latitude; s.lng=p.coords.longitude;
+      s.acc=p.coords.accuracy; s.exact=true;
+      if(s.detail) book[norm(s.detail)]={label:s.detail,lat:s.lat,lng:s.lng,acc:s.acc};
+      invalidateRoadMatrix();
+      plans=buildPlans(); renderAll();
+    },()=>{
+      learn.textContent=old; learn.disabled=false;
+      alert("Konum alınamadı. Tarayıcı izni kapalı olabilir; koordinatı elle de girebilirsiniz.");
+    },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  }
+});
+
+$("calc").addEventListener("click",planRoute);
+$("clear").addEventListener("click",()=>{stops=[];plans=null;renderAll();});
+
+$("useRoad").addEventListener("change",()=>{
+  useRoad=$("useRoad").checked;
+  invalidateRoadMatrix();
+  updateRoadHint();
+  renderAll();
+});
+
+$("demo").addEventListener("click",()=>{
+  if(mode==="city"){
+    // Elazığ merkez çevresinde gerçekçi bir dağıtım günü
+    const base=[38.6748,39.2225];
+    const d=[["Fırat Market, Çarşı",0.006,-0.010,42],["Nazar Büfe, Cumhuriyet Mah.",-0.009,0.013,18],
+             ["Aydın Kırtasiye, İzzetpaşa",0.014,0.006,25],["Umut Kafe, Sanayi",-0.016,-0.007,33],
+             ["Şen Pastane, Rızaiye",0.004,0.021,12],["Kardeşler Bakkal, Olgunlar",-0.021,0.004,28],
+             ["Elif Eczane, Hilalkent",0.019,-0.017,7],["Vira Restoran, Gölbaşı",-0.005,-0.022,40]];
+    depotOverride={id:"D",name:"Depo",lat:base[0],lng:base[1],isDepot:true};
+    $("depotInfo").innerHTML=`<span class="coord">${base[0].toFixed(5)}, ${base[1].toFixed(5)}</span>`;
+    stops=d.map(x=>({id:uid++,name:x[0].split(",")[0],lat:base[0]+x[1],lng:base[1]+x[2],
+      detail:x[0],weight:x[3],phone:"",exact:true,acc:8,done:false,vehicleId:null}));
+    d.forEach((x,i)=>{book[norm(x[0])]={label:x[0],lat:stops[i].lat,lng:stops[i].lng,acc:8};});
+  }else{
+    $("depot").value="Elazığ";
+    const d=[["Malatya","Öz Anadolu Market",320,"0532 114 22 08"],["Kayseri","Serhat Gıda Toptan",180,"0533 902 41 17"],
+             ["Gaziantep","Antep Baharat Ltd.",240,"0542 337 90 65"],["Şanlıurfa","Harran Lojistik deposu",150,"0535 226 78 40"],
+             ["Diyarbakır","Sur Market Zinciri",410,"0538 471 03 92"],["Sivas","Kale Toptan Gıda",95,"0544 810 55 21"],
+             ["Adana","Çukurova Dağıtım",275,"0530 662 19 74"]];
+    stops=d.map(x=>{const c=cityByName(x[0]);
+      return {id:uid++,name:c[0],lat:c[1],lng:c[2],detail:x[1],weight:x[2],phone:x[3],exact:false,acc:null,done:false,vehicleId:null};});
+  }
+  plans=null; invalidateRoadMatrix(); renderAll();
+});
+
+$("map").addEventListener("click",e=>{
+  const r=$("map").getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width*MW, y=(e.clientY-r.top)/r.height*MH;
+  if(mode==="intercity"){
+    const lng=TR.lon0+x/MW*(TR.lon1-TR.lon0), lat=TR.lat1-y/MH*(TR.lat1-TR.lat0);
+    let near=CITIES[0],nd=Infinity;
+    CITIES.forEach(c=>{const dd=(c[1]-lat)**2+(c[2]-lng)**2; if(dd<nd){nd=dd;near=c;}});
+    stops.push({id:uid++,name:near[0],lat,lng,detail:"haritadan seçilen nokta",
+      weight:0,phone:"",exact:false,acc:null,done:false,vehicleId:null});
+    plans=null; renderAll();
+  }
+});
+
+["speed","service","cons","price","ret","startTime"].forEach(id=>
+  $(id).addEventListener("change",()=>{ if(plans) plans=buildPlans(); renderAll(); }));
+$("depot").addEventListener("change",()=>{
+  invalidateRoadMatrix();
+  if(plans) plans=buildPlans();
+  renderAll();
+});
+
+function tickClock(){$("clock").textContent=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});}
+
+/* ============ BAŞLANGIÇ ============ */
+fillSelects();
+vehicles=defaultVehicles(); vuid=2;
+loadState();
+applyModeUI(mode);
+$("useRoad").checked=useRoad;
+updateRoadHint();
+tickClock(); setInterval(tickClock,20000);
+renderAll();
+</script>
+</body>
+</html>
