@@ -77,6 +77,7 @@
   .stop-main{flex:1;min-width:0}
   .stop-main div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .empty{padding:26px 16px;color:var(--muted);font-size:14px;text-align:center;line-height:1.55}
+  .stop-veh{width:auto;flex:none;font-size:11.5px;padding:3px 6px;margin-left:2px;max-width:96px}
 
   .board{background:var(--ink);color:#fff;border-radius:3px;padding:16px 18px;margin-bottom:18px}
   .board .lead{color:#9FB0C2;font-size:13.5px;margin-bottom:12px}
@@ -98,6 +99,9 @@
 
   .maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
   .maphint{font-size:12.5px;color:var(--muted);font-weight:400}
+  #mapLegend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--line);font-size:12.5px}
+  #mapLegend:empty{display:none;border:none;padding:0}
+  #mapLegend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
   svg.map{display:block;width:100%;height:auto;background:#F5F7F8;cursor:crosshair}
   .land{fill:#DCE3E8;stroke:#AEBAC4;stroke-width:1.2}
   .gridline{stroke:#E1E6EA;stroke-width:1}
@@ -133,9 +137,26 @@
   .bookrow .nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .coord{font-family:var(--display);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 
+  .veh-row{display:flex;align-items:center;gap:9px;padding:8px 14px;border-bottom:1px solid #EEF1F3;font-size:13.5px}
+  .veh-row:last-child{border-bottom:none}
+  .veh-dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .veh-nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .veh-cap{font-family:var(--display);font-size:13px;color:var(--muted);white-space:nowrap}
+
   .settings{border-top:1px solid var(--line);background:#FAFBFC;padding:12px 14px}
   .settings h3{font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 9px}
   .hint{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.5}
+  .roadstat{font-size:12.5px;margin-top:8px;min-height:1.4em}
+  .roadstat.ok{color:var(--green)}
+  .roadstat.err{color:var(--amber)}
+  .warn{background:#FDF3E3;border:1px solid #E8CFA0;color:var(--amber);padding:9px 14px;font-size:13px;margin:0 0 1px}
+  .vehsec{border-top:2px solid var(--ink)}
+  .vehsec:first-child{border-top:none}
+  .vehsec h3{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:16px;font-weight:600;padding:11px 14px;margin:0;background:#FAFBFC;border-bottom:1px solid var(--line)}
+  .vehsec h3 .cap{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:500}
+  .aggwrap{border-top:2px solid var(--ink)}
+  label.chk{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:0}
+  label.chk input{width:auto}
   footer{padding:8px 20px 26px;text-align:center;color:var(--muted);font-size:12.5px}
   @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -192,6 +213,11 @@
         <div><label for="phone">Telefon</label><input id="phone" placeholder="05__ ___ __ __"></div>
       </div>
 
+      <div class="field" id="vehField" style="display:none">
+        <label for="stopVeh">Araç <span class="opt">— boş bırakılırsa otomatik dağıtılır</span></label>
+        <select id="stopVeh"></select>
+      </div>
+
       <button class="btn-primary" id="add">Durağı listeye ekle</button>
       <div class="btnbar">
         <button class="btn-ghost" id="demo">Örnek sevkiyat</button>
@@ -201,10 +227,27 @@
   </section>
 
   <section class="panel">
+    <h2>Araçlar <span class="count num" id="vehCnt">0</span></h2>
+    <div id="vehList"></div>
+    <div class="pad" style="border-top:1px solid var(--line)">
+      <div class="row2" style="margin-bottom:8px">
+        <input id="vehName" placeholder="Araç/şoför adı">
+        <input id="vehCap" type="number" min="0" step="1" placeholder="Kapasite kg (0=sınırsız)">
+      </div>
+      <div class="btnbar">
+        <button class="btn-ghost" id="vehAdd">Araç ekle</button>
+        <button class="btn-ghost" id="vehAuto">Otomatik dağıt</button>
+      </div>
+      <div class="hint" style="margin:9px 0 0">Birden çok araç tanımlarsanız duraklar depoya olan yönlerine ve araç kapasitesine göre otomatik bölüştürülür. Bir durağı elle başka bir araca taşımak için durak satırındaki araç seçiciyi kullanın, sonra <strong>Rotayı planla</strong>'ya basın.</div>
+    </div>
+  </section>
+
+  <section class="panel">
     <h2>Bugünün durakları <span class="count num" id="cnt">0</span></h2>
     <ul class="stops" id="list"></ul>
     <div class="pad" style="border-top:1px solid var(--line)">
       <button class="btn-go" id="calc" disabled>Rotayı planla</button>
+      <div class="roadstat" id="roadStat"></div>
     </div>
   </section>
 
@@ -218,7 +261,7 @@
 
   <section class="panel">
     <div class="settings">
-      <h3>Araç ve maliyet</h3>
+      <h3>Sürüş ve maliyet</h3>
       <div class="row3">
         <div><label for="startTime">Çıkış</label><input id="startTime" type="time" value="08:30"></div>
         <div><label for="speed">Ort. hız</label><input id="speed" type="number" value="62" min="5"></div>
@@ -229,6 +272,11 @@
         <div><label for="price">Yakıt ₺/lt</label><input id="price" type="number" value="52" min="1" step="0.5"></div>
         <div><label for="ret">Depoya dönüş</label><select id="ret"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
       </div>
+      <div class="field" style="margin:12px 0 0">
+        <label class="chk" for="useRoad"><input type="checkbox" id="useRoad"> Gerçek yol verisi kullan (OSRM)</label>
+        <div class="hint" id="roadHint" style="margin-top:6px"></div>
+      </div>
+      <div class="hint">Bu ayarlar tüm araçlar için ortak kullanılır.</div>
       <div class="hint" id="factorHint"></div>
     </div>
   </section>
@@ -238,16 +286,17 @@
   <div id="board"></div>
   <section class="panel">
     <h2 class="maphead"><span id="mapTitle">Rota haritası</span><span class="maphint" id="mapHint"></span></h2>
+    <div id="mapLegend"></div>
     <svg class="map" id="map" viewBox="0 0 1000 438" role="img" aria-label="Rota haritası"></svg>
   </section>
   <section class="panel">
-    <h2>Sevkiyat listesi</h2>
+    <h2>Sevkiyat listesi<span class="maphint" id="manifestHint"></span></h2>
     <div id="manifest"></div>
   </section>
 </div>
 </div>
 
-<footer>Router · rota planlama denemesi · veriler yalnızca bu oturumda tutulur</footer>
+<footer>Router · rota planlama denemesi · duraklar, araçlar ve ayarlar bu tarayıcıda saklanır</footer>
 
 <script>
 /* ============ VERİ ============ */
@@ -285,14 +334,22 @@ const BORDER = [
 
 const MW=1000, MH=438, ASPECT=MW/MH;
 const TR={lon0:25.4,lon1:45.4,lat0:35.6,lat1:42.4};
+const OSRM_BASE="https://router.project-osrm.org";
+const PALETTE=["#0B4F9E","#0F6B47","#B8760A","#9E2B1F","#6A3FA0","#0E7C86","#8A4B08","#3D5AA6"];
+const STORAGE_KEY="router_state_v1";
 
 /* ============ DURUM ============ */
 let mode="intercity";            // "intercity" | "city"
-let stops=[], plan=null, uid=1;
+let stops=[], uid=1;
+let vehicles=[], vuid=1;         // {id,name,cap} — cap kg, 0 = sınırsız
 let book={};                     // alıcı adı -> {lat,lng,acc}
 let pending=null;                // form için yakalanan GPS
 let depotOverride=null;          // GPS ile ayarlanan depo
 let proj=null;
+let plans=null;                  // {byVehicle,aggregate,depot,back,unassigned}
+let useRoad=false;               // gerçek yol verisi (OSRM) kullan
+let realMatrix=null;             // {pointKey:{pointKey:km}} — OSRM'den gelen mesafe matrisi
+let roadStatus="";                // "" | "loading" | "ok" | "error"
 
 const $=id=>document.getElementById(id);
 const norm=s=>s.trim().toLocaleLowerCase("tr").replace(/\s+/g," ");
@@ -308,7 +365,52 @@ function haversine(a,b){
   const s=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
   return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
 }
-const roadKm=(a,b)=>haversine(a,b)*factor();
+function pointKey(p){ return p.isDepot ? "D" : p.id; }
+function roadKm(a,b){
+  if(useRoad && realMatrix){
+    const row=realMatrix[pointKey(a)];
+    if(row && row[pointKey(b)]!=null) return row[pointKey(b)];
+  }
+  return haversine(a,b)*factor();
+}
+
+/* ============ GERÇEK YOL VERİSİ (OSRM) ============ */
+function invalidateRoadMatrix(){ realMatrix=null; roadStatus=""; }
+async function fetchRoadMatrix(points){
+  const coords=points.map(p=>p.lng.toFixed(6)+","+p.lat.toFixed(6)).join(";");
+  const res=await fetch(`${OSRM_BASE}/table/v1/driving/${coords}?annotations=distance`);
+  if(!res.ok) throw new Error("OSRM table HTTP "+res.status);
+  const data=await res.json();
+  if(data.code!=="Ok"||!data.distances) throw new Error("OSRM table: "+data.code);
+  const m={};
+  points.forEach((p,i)=>{
+    const ka=pointKey(p); m[ka]={};
+    points.forEach((q,j)=>{ m[ka][pointKey(q)]=data.distances[i][j]/1000; });
+  });
+  return m;
+}
+async function fetchRoadGeometry(orderedPoints){
+  if(orderedPoints.length<2) return null;
+  const coords=orderedPoints.map(p=>p.lng.toFixed(6)+","+p.lat.toFixed(6)).join(";");
+  const res=await fetch(`${OSRM_BASE}/route/v1/driving/${coords}?overview=full&geometries=geojson`);
+  if(!res.ok) throw new Error("OSRM route HTTP "+res.status);
+  const data=await res.json();
+  if(data.code!=="Ok"||!data.routes||!data.routes.length) throw new Error("OSRM route: "+data.code);
+  return data.routes[0].geometry.coordinates; // [[lng,lat],...]
+}
+function renderRoadStatus(){
+  const el=$("roadStat");
+  if(!useRoad){ el.textContent=""; el.className="roadstat"; return; }
+  if(roadStatus==="loading"){ el.textContent="Gerçek yol verisi alınıyor…"; el.className="roadstat"; }
+  else if(roadStatus==="ok"){ el.textContent="Gerçek karayolu mesafesi kullanılıyor (OSRM)."; el.className="roadstat ok"; }
+  else if(roadStatus==="error"){ el.textContent="Yol verisi alınamadı (bağlantı yok veya servise erişilemedi) — kuş uçuşu mesafeye dönüldü."; el.className="roadstat err"; }
+  else { el.textContent=""; el.className="roadstat"; }
+}
+function updateRoadHint(){
+  $("roadHint").textContent = useRoad
+    ? `Açık: "Rotayı planla" tıklandığında ücretsiz OSRM demo servisinden gerçek karayolu mesafesi ve güzergâhı alınır. Bağlantı yoksa otomatik olarak kuş uçuşu hesaba dönülür.`
+    : "Kapalı: mesafeler kuş uçuşu değeri ilgili katsayıyla düzeltilir.";
+}
 
 /* ============ GPS ============ */
 function capture(target){
@@ -323,9 +425,9 @@ function capture(target){
     btn.textContent=old; btn.disabled=false;
     const g={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy};
     if(target==="depot"){
-      depotOverride={name:"Depo (GPS)",lat:g.lat,lng:g.lng,isDepot:true};
+      depotOverride={id:"D",name:"Depo (GPS)",lat:g.lat,lng:g.lng,isDepot:true};
       $("depotInfo").innerHTML=accBadge(g.acc)+`<span class="coord">${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}</span>`;
-      plan=null; renderAll();
+      plans=null; invalidateRoadMatrix(); renderAll();
     }else{
       pending=g;
       $("coords").value=g.lat.toFixed(6)+", "+g.lng.toFixed(6);
@@ -364,8 +466,12 @@ const cityByName=n=>CITIES.find(c=>c[0]===n);
 function depot(){
   if(mode==="city"&&depotOverride) return depotOverride;
   const c=cityByName($("depot").value)||CITIES[0];
-  return {name:c[0],lat:c[1],lng:c[2],isDepot:true};
+  return {id:"D",name:c[0],lat:c[1],lng:c[2],isDepot:true};
 }
+
+/* ============ ARAÇLAR ============ */
+function defaultVehicles(){ return [{id:1,name:"Araç 1",cap:0}]; }
+const vehColor=v=>PALETTE[Math.max(0,vehicles.findIndex(x=>x.id===v.id))%PALETTE.length];
 
 /* ============ ROTA MOTORU ============ */
 function tourLength(seq,back){
@@ -395,38 +501,109 @@ function twoOpt(seq,back){
   }
   return best;
 }
-function buildPlan(){
-  const d=depot(), pts=stops.filter(s=>!s.done);
-  if(!pts.length) return null;
-  const back=$("ret").value==="1";
-  const optimised=twoOpt(nearestNeighbour(d,pts),back);
-  const manual=[d].concat(pts);
 
+// Duraklar birden çok araca bölüştürülür: önce elle atananlar (kapasite izin verdiği sürece),
+// kalanlar depoya göre açısal sırayla (sweep) araçlara kapasite dolana kadar dağıtılır.
+function buildPlans(){
+  const d=depot();
+  const active=stops.filter(s=>!s.done);
+  if(!active.length) return null;
+  const back=$("ret").value==="1";
   const speed=Math.max(5,+$("speed").value||62);
   const service=Math.max(0,+$("service").value||0);
   const cons=Math.max(0.1,+$("cons").value||24);
   const price=Math.max(0.1,+$("price").value||52);
+  const vlist=vehicles.length?vehicles:defaultVehicles();
 
-  const measure=seq=>{
-    const km=tourLength(seq,back), drive=km/speed*60;
-    return {km,min:drive+service*(seq.length-1),fuel:km/100*cons*price};
+  const load={}; vlist.forEach(v=>load[v.id]=0);
+  const assignOf={};
+  active.forEach(s=>{
+    if(s.vehicleId!=null && vlist.some(v=>v.id===s.vehicleId)){
+      assignOf[s.id]=s.vehicleId; load[s.vehicleId]+=s.weight||0;
+    }
+  });
+  const rest=active.filter(s=>assignOf[s.id]==null);
+  const withAngle=rest.map(s=>({s,ang:Math.atan2(s.lat-d.lat,s.lng-d.lng)})).sort((a,b)=>a.ang-b.ang);
+  let vi=0; const unassigned=[];
+  withAngle.forEach(({s})=>{
+    let tries=0, placed=false;
+    while(tries<vlist.length){
+      const v=vlist[vi%vlist.length];
+      if(v.cap<=0 || load[v.id]+(s.weight||0)<=v.cap){
+        assignOf[s.id]=v.id; load[v.id]+=s.weight||0; placed=true; break;
+      }
+      vi++; tries++;
+    }
+    if(!placed) unassigned.push(s);
+  });
+
+  const measure=(seq,back)=>{ const km=tourLength(seq,back); return {km,min:km/speed*60+service*(seq.length-1),fuel:km/100*cons*price}; };
+  const byVehicle=[];
+  vlist.forEach(v=>{
+    const pts=active.filter(s=>assignOf[s.id]===v.id);
+    if(!pts.length) return;
+    const optimised=twoOpt(nearestNeighbour(d,pts),back);
+    const manualOrder=[d].concat(pts);
+    const A=measure(optimised,back), B=measure(manualOrder,back);
+    const [hh,mm]=($("startTime").value||"08:30").split(":").map(Number);
+    let clock=hh*60+mm, run=0; const legs=[];
+    for(let i=1;i<optimised.length;i++){
+      const km=roadKm(optimised[i-1],optimised[i]);
+      run+=km; clock+=km/speed*60;
+      legs.push({stop:optimised[i],km,cum:run,eta:clock});
+      clock+=service;
+    }
+    let backLeg=null;
+    if(back){
+      const km=roadKm(optimised[optimised.length-1],d);
+      backLeg={km,eta:clock+km/speed*60,cum:run+km};
+    }
+    byVehicle.push({vehicle:v,seq:optimised,legs,backLeg,back,A,B});
+  });
+
+  const sum=(arr,which,k)=>arr.reduce((t,p)=>t+p[which][k],0);
+  const aggregate={
+    A:{km:sum(byVehicle,"A","km"),min:sum(byVehicle,"A","min"),fuel:sum(byVehicle,"A","fuel")},
+    B:{km:sum(byVehicle,"B","km"),min:sum(byVehicle,"B","min"),fuel:sum(byVehicle,"B","fuel")}
   };
-  const A=measure(optimised),B=measure(manual);
+  return {byVehicle, aggregate, depot:d, back, unassigned};
+}
 
-  const [hh,mm]=($("startTime").value||"08:30").split(":").map(Number);
-  let clock=hh*60+mm, run=0; const legs=[];
-  for(let i=1;i<optimised.length;i++){
-    const km=roadKm(optimised[i-1],optimised[i]);
-    run+=km; clock+=km/speed*60;
-    legs.push({stop:optimised[i],km,cum:run,eta:clock});
-    clock+=service;
+async function planRoute(){
+  const btn=$("calc"), original=btn.textContent;
+  const active=stops.filter(s=>!s.done);
+  if(!active.length){ plans=null; renderAll(); return; }
+  btn.disabled=true;
+  roadStatus = useRoad ? "loading" : "";
+  renderRoadStatus();
+  if(useRoad){
+    btn.textContent="Yol verisi alınıyor…";
+    try{
+      const d=depot();
+      realMatrix=await fetchRoadMatrix([d,...active]);
+      roadStatus="ok";
+    }catch(err){
+      console.warn("OSRM matrisi alınamadı:",err);
+      realMatrix=null; roadStatus="error";
+    }
+    renderRoadStatus();
   }
-  let backLeg=null;
-  if(back){
-    const km=roadKm(optimised[optimised.length-1],d);
-    backLeg={km,eta:clock+km/speed*60,cum:run+km};
+  btn.textContent="Hesaplanıyor…";
+  plans=buildPlans();
+  if(useRoad && roadStatus==="ok" && plans){
+    for(const p of plans.byVehicle){
+      try{
+        const pts = p.back ? p.seq.concat([plans.depot]) : p.seq;
+        p.geometry = pts.length>1 ? await fetchRoadGeometry(pts) : null;
+      }catch(err){
+        console.warn("OSRM güzergâh alınamadı:",err);
+        p.geometry=null;
+      }
+    }
   }
-  return {seq:optimised,legs,backLeg,back,A,B,depot:d};
+  btn.textContent=original;
+  btn.disabled=stops.filter(s=>!s.done).length<1;
+  renderAll();
 }
 
 /* ============ PROJEKSİYON ============ */
@@ -461,9 +638,14 @@ function niceStep(m){
 }
 
 /* ============ ÇİZİM ============ */
+function vehSelectHtml(s){
+  if(vehicles.length<=1) return "";
+  const opts=`<option value="">Otomatik</option>`+vehicles.map(v=>`<option value="${v.id}" ${s.vehicleId===v.id?"selected":""}>${v.name}</option>`).join("");
+  return `<select class="stop-veh" data-vehsel="${s.id}">${opts}</select>`;
+}
 function renderList(){
   $("cnt").textContent=stops.length;
-  $("calc").disabled=stops.length<1;
+  $("calc").disabled=stops.filter(s=>!s.done).length<1;
   if(!stops.length){
     $("list").innerHTML=`<li><div class="empty">Henüz durak yok.<br>Sol taraftan ekleyin veya örnek sevkiyatı yükleyin.</div></li>`;
     return;
@@ -475,6 +657,7 @@ function renderList(){
         <div class="stop-city">${s.name}</div>
         <div class="stop-meta">${[s.detail,s.weight?fmt(s.weight)+" kg":"",s.phone].filter(Boolean).join(" · ")||"—"}</div>
       </div>
+      ${vehSelectHtml(s)}
       <button class="btn-x" data-del="${s.id}" aria-label="${s.name} durağını sil">✕</button>
     </li>`).join("");
 }
@@ -496,23 +679,45 @@ function renderBook(){
     </div>`).join("");
 }
 
+function renderVehicles(){
+  $("vehCnt").textContent=vehicles.length;
+  $("vehList").innerHTML=vehicles.map(v=>{
+    const load=stops.filter(s=>!s.done&&s.vehicleId===v.id).reduce((t,s)=>t+(s.weight||0),0);
+    const capTxt=v.cap>0 ? `${fmt(load)} / ${fmt(v.cap)} kg` : `${fmt(load)} kg · sınırsız`;
+    return `<div class="veh-row">
+      <span class="veh-dot" style="background:${vehColor(v)}"></span>
+      <span class="veh-nm">${v.name}</span>
+      <span class="veh-cap">${capTxt}</span>
+      <button class="btn-x" data-vehdel="${v.id}" aria-label="${v.name} sil">✕</button>
+    </div>`;
+  }).join("");
+  $("vehField").style.display = vehicles.length>1 ? "" : "none";
+  const cur=$("stopVeh").value;
+  $("stopVeh").innerHTML=`<option value="">Otomatik</option>`+vehicles.map(v=>`<option value="${v.id}">${v.name}</option>`).join("");
+  if(vehicles.some(v=>String(v.id)===cur)) $("stopVeh").value=cur;
+}
+
 function renderBoard(){
-  if(!plan){$("board").innerHTML="";return;}
-  const {A,B}=plan;
+  if(!plans || !plans.byVehicle.length){$("board").innerHTML="";return;}
+  const dec=mode==="city"?1:0;
+  const {A,B}=plans.aggregate;
   const dKm=B.km-A.km,dMin=B.min-A.min,dTl=B.fuel-A.fuel;
   const pct=B.km>0?Math.round(dKm/B.km*100):0;
   const w=(v,max)=>max>0?Math.max(3,Math.round(v/max*100)):0;
+  const nveh=plans.byVehicle.length;
+  const stopCount=stops.filter(s=>!s.done).length;
+  const roadNote = useRoad ? (roadStatus==="ok" ? " · gerçek yol verisi" : roadStatus==="error" ? " · yol verisi alınamadı, kuş uçuşu kullanıldı" : "") : "";
   $("board").innerHTML=`
     <div class="board">
-      <div class="lead">Elle sıralanan tur ile Router'ın planladığı tur karşılaştırması — ${plan.legs.length} durak${plan.back?", depoya dönüşle":""}.</div>
+      <div class="lead">Elle sıralanan tur${nveh>1?"lar":""} ile Router'ın planladığı ${nveh>1?nveh+" araçlık ":""}tur karşılaştırması — ${stopCount} durak${plans.back?", depoya dönüşle":""}${roadNote}.</div>
       <div class="savegrid">
-        <div class="save ${dKm>0?"pos":""}"><div class="big">${fmt(dKm,mode==="city"?1:0)}<span class="unit">km</span></div><div class="cap">daha az yol</div></div>
+        <div class="save ${dKm>0?"pos":""}"><div class="big">${fmt(dKm,dec)}<span class="unit">km</span></div><div class="cap">daha az yol</div></div>
         <div class="save ${dMin>0?"pos":""}"><div class="big">${fmt(dMin/60,1)}<span class="unit">saat</span></div><div class="cap">daha kısa süre</div></div>
         <div class="save ${dTl>0?"pos":""}"><div class="big">₺${fmt(dTl)}</div><div class="cap">günlük yakıt tasarrufu</div></div>
       </div>
       <div class="bars">
-        <div class="bar-row"><span class="lbl">Elle sıralama</span><span class="bar-track"><span class="bar-fill before" style="width:100%"></span></span><span class="bar-val">${fmt(B.km,mode==="city"?1:0)} km</span></div>
-        <div class="bar-row"><span class="lbl">Router planı</span><span class="bar-track"><span class="bar-fill after" style="width:${w(A.km,B.km)}%"></span></span><span class="bar-val">${fmt(A.km,mode==="city"?1:0)} km</span></div>
+        <div class="bar-row"><span class="lbl">Elle sıralama</span><span class="bar-track"><span class="bar-fill before" style="width:100%"></span></span><span class="bar-val">${fmt(B.km,dec)} km</span></div>
+        <div class="bar-row"><span class="lbl">Router planı</span><span class="bar-track"><span class="bar-fill after" style="width:${w(A.km,B.km)}%"></span></span><span class="bar-val">${fmt(A.km,dec)} km</span></div>
         <div class="lead" style="margin:10px 0 0">Yol ${pct}% kısaldı. Ayda 26 sevkiyat günü için yaklaşık <strong style="color:#5FD3A0">₺${fmt(dTl*26)}</strong> yakıt farkı.</div>
       </div>
     </div>`;
@@ -544,19 +749,34 @@ function renderMap(){
       <text class="pin-t" x="${X(d.lng)}" y="${Y(d.lat)+5}">D</text>
       <text class="pin-lbl" x="${X(d.lng)}" y="${Y(d.lat)+24}" text-anchor="middle">${d.name}</text>`;
 
-  if(plan){
-    svg+=`<polyline class="leg" points="${plan.seq.map(s=>X(s.lng).toFixed(1)+","+Y(s.lat).toFixed(1)).join(" ")}"></polyline>`;
-    if(plan.back){
-      const a=plan.seq[plan.seq.length-1];
-      svg+=`<polyline class="leg back" points="${X(a.lng)},${Y(a.lat)} ${X(d.lng)},${Y(d.lat)}"></polyline>`;
-    }
-    svg+=drawDepot();
-    plan.legs.forEach((l,i)=>{
-      const x=X(l.stop.lng),y=Y(l.stop.lat);
-      svg+=`<circle class="${l.stop.exact?"pin-b":"pin-a"}" cx="${x}" cy="${y}" r="11"></circle>
-            <text class="pin-t" x="${x}" y="${y+5}">${i+1}</text>
-            <text class="pin-lbl" x="${x}" y="${y+25}" text-anchor="middle">${l.stop.name}</text>`;
+  let legend="";
+  if(plans && plans.byVehicle.length){
+    plans.byVehicle.forEach(p=>{
+      const color=vehColor(p.vehicle);
+      if(p.geometry && p.geometry.length>1){
+        const pts=p.geometry.map(c=>X(c[0]).toFixed(1)+","+Y(c[1]).toFixed(1)).join(" ");
+        svg+=`<polyline class="leg" style="stroke:${color}" points="${pts}"></polyline>`;
+      }else{
+        svg+=`<polyline class="leg" style="stroke:${color}" points="${p.seq.map(s=>X(s.lng).toFixed(1)+","+Y(s.lat).toFixed(1)).join(" ")}"></polyline>`;
+        if(p.backLeg){
+          const a=p.seq[p.seq.length-1];
+          svg+=`<polyline class="leg back" style="stroke:${color}" points="${X(a.lng)},${Y(a.lat)} ${X(d.lng)},${Y(d.lat)}"></polyline>`;
+        }
+      }
     });
+    svg+=drawDepot();
+    plans.byVehicle.forEach(p=>{
+      const color=vehColor(p.vehicle);
+      p.legs.forEach((l,i)=>{
+        const x=X(l.stop.lng),y=Y(l.stop.lat);
+        svg+=`<circle class="${l.stop.exact?"pin-b":"pin-a"}" style="fill:${color}" cx="${x}" cy="${y}" r="11"></circle>
+              <text class="pin-t" x="${x}" y="${y+5}">${i+1}</text>
+              <text class="pin-lbl" x="${x}" y="${y+25}" text-anchor="middle">${l.stop.name}</text>`;
+      });
+    });
+    if(plans.byVehicle.length>1){
+      legend=plans.byVehicle.map(p=>`<span><span class="dot" style="background:${vehColor(p.vehicle)}"></span>${p.vehicle.name}</span>`).join("");
+    }
   }else{
     svg+=drawDepot();
     stops.forEach(s=>{
@@ -565,78 +785,149 @@ function renderMap(){
     });
   }
   $("map").innerHTML=svg;
+  $("mapLegend").innerHTML=legend;
 }
 
 function renderManifest(){
-  if(!plan){
+  if(!plans){
     $("manifest").innerHTML=`<div class="empty">Rota planlanmadı. Durakları ekleyip <strong>Rotayı planla</strong> düğmesine basın.</div>`;
+    $("manifestHint").textContent="";
     return;
   }
+  $("manifestHint").textContent = plans.byVehicle.length>1 ? plans.byVehicle.length+" araç" : "";
   const dec=mode==="city"?1:0;
-  const rows=plan.legs.map((l,i)=>`
-    <tr class="${l.stop.done?"done":""}">
-      <td><span class="seq">${l.stop.done?"✓":i+1}</span></td>
-      <td>
-        <div class="dest">${l.stop.name}</div>
-        <div class="sub">${l.stop.exact?"kesin konum":"yaklaşık konum"}${l.stop.detail?" · "+l.stop.detail:""}${l.stop.phone?" · "+l.stop.phone:""}</div>
-      </td>
-      <td class="r"><span class="km">${fmt(l.km,dec)}</span></td>
-      <td class="r"><span class="km">${fmt(l.cum,dec)}</span></td>
-      <td class="r"><span class="eta">${hhmm(l.eta)}</span></td>
-      <td class="r" style="white-space:nowrap">
-        ${mode==="city"?`<button class="tick learn" data-learn="${l.stop.id}">Konumu öğret</button>`:""}
-        <button class="tick" data-done="${l.stop.id}">${l.stop.done?"Geri al":"Teslim et"}</button>
-      </td>
-    </tr>`).join("");
-
-  const back=plan.backLeg?`
-    <tr>
-      <td><span class="seq" style="background:var(--ink-soft)">D</span></td>
-      <td><div class="dest">${plan.depot.name} — depoya dönüş</div><div class="sub">tur kapanışı</div></td>
-      <td class="r"><span class="km">${fmt(plan.backLeg.km,dec)}</span></td>
-      <td class="r"><span class="km">${fmt(plan.backLeg.cum,dec)}</span></td>
-      <td class="r"><span class="eta">${hhmm(plan.backLeg.eta)}</span></td><td></td>
-    </tr>`:"";
-
-  const last=plan.backLeg?plan.backLeg.eta:(plan.legs[plan.legs.length-1]?.eta??0);
-  const litres=plan.A.km/100*(+$("cons").value||24);
-
-  $("manifest").innerHTML=`
-    <table>
-      <thead><tr><th style="width:44px">Sıra</th><th>Teslimat noktası</th>
-      <th class="r">Etap km</th><th class="r">Toplam km</th><th class="r">Varış</th><th></th></tr></thead>
-      <tbody>${rows}${back}</tbody>
-    </table>
-    <div class="settings" style="display:flex;gap:26px;flex-wrap:wrap">
-      <div><div class="sub">Toplam yol</div><div class="eta">${fmt(plan.A.km,dec)} km</div></div>
-      <div><div class="sub">Tur süresi</div><div class="eta">${dur(plan.A.min)}</div></div>
-      <div><div class="sub">Bitiş saati</div><div class="eta">${hhmm(last)}</div></div>
-      <div><div class="sub">Yakıt</div><div class="eta">${fmt(litres,1)} lt · ₺${fmt(plan.A.fuel)}</div></div>
-      <div><div class="sub">Toplam yük</div><div class="eta">${fmt(stops.reduce((t,s)=>t+(s.weight||0),0))} kg</div></div>
+  let html="";
+  if(plans.unassigned && plans.unassigned.length){
+    html+=`<div class="warn">${plans.unassigned.length} durak hiçbir araca sığmadı (kapasite yetersiz): ${plans.unassigned.map(s=>s.name).join(", ")}. Araç kapasitesini artırın veya yeni araç ekleyin.</div>`;
+  }
+  if(!plans.byVehicle.length){
+    html+=`<div class="empty">Hiçbir durak bir araca atanamadı.</div>`;
+    $("manifest").innerHTML=html;
+    return;
+  }
+  plans.byVehicle.forEach(p=>{
+    const rows=p.legs.map((l,i)=>`
+      <tr class="${l.stop.done?"done":""}">
+        <td><span class="seq" style="background:${l.stop.done?'var(--green)':vehColor(p.vehicle)}">${l.stop.done?"✓":i+1}</span></td>
+        <td>
+          <div class="dest">${l.stop.name}</div>
+          <div class="sub">${l.stop.exact?"kesin konum":"yaklaşık konum"}${l.stop.detail?" · "+l.stop.detail:""}${l.stop.phone?" · "+l.stop.phone:""}</div>
+        </td>
+        <td class="r"><span class="km">${fmt(l.km,dec)}</span></td>
+        <td class="r"><span class="km">${fmt(l.cum,dec)}</span></td>
+        <td class="r"><span class="eta">${hhmm(l.eta)}</span></td>
+        <td class="r" style="white-space:nowrap">
+          ${mode==="city"?`<button class="tick learn" data-learn="${l.stop.id}">Konumu öğret</button>`:""}
+          <button class="tick" data-done="${l.stop.id}">${l.stop.done?"Geri al":"Teslim et"}</button>
+        </td>
+      </tr>`).join("");
+    const back=p.backLeg?`
+      <tr>
+        <td><span class="seq" style="background:var(--ink-soft)">D</span></td>
+        <td><div class="dest">${plans.depot.name} — depoya dönüş</div><div class="sub">tur kapanışı</div></td>
+        <td class="r"><span class="km">${fmt(p.backLeg.km,dec)}</span></td>
+        <td class="r"><span class="km">${fmt(p.backLeg.cum,dec)}</span></td>
+        <td class="r"><span class="eta">${hhmm(p.backLeg.eta)}</span></td><td></td>
+      </tr>`:"";
+    const last=p.backLeg?p.backLeg.eta:(p.legs[p.legs.length-1]?.eta??0);
+    const litres=p.A.km/100*(+$("cons").value||24);
+    const load=p.legs.reduce((t,l)=>t+(l.stop.weight||0),0);
+    html+=`
+      <div class="vehsec">
+        <h3><span class="veh-dot" style="background:${vehColor(p.vehicle)}"></span>${p.vehicle.name}<span class="cap">${p.legs.length} durak · ${fmt(load)}${p.vehicle.cap>0?" / "+fmt(p.vehicle.cap):""} kg</span></h3>
+        <table>
+          <thead><tr><th style="width:44px">Sıra</th><th>Teslimat noktası</th>
+          <th class="r">Etap km</th><th class="r">Toplam km</th><th class="r">Varış</th><th></th></tr></thead>
+          <tbody>${rows}${back}</tbody>
+        </table>
+        <div class="settings" style="display:flex;gap:26px;flex-wrap:wrap">
+          <div><div class="sub">Yol</div><div class="eta">${fmt(p.A.km,dec)} km</div></div>
+          <div><div class="sub">Süre</div><div class="eta">${dur(p.A.min)}</div></div>
+          <div><div class="sub">Bitiş</div><div class="eta">${hhmm(last)}</div></div>
+          <div><div class="sub">Yakıt</div><div class="eta">${fmt(litres,1)} lt · ₺${fmt(p.A.fuel)}</div></div>
+        </div>
+      </div>`;
+  });
+  if(plans.byVehicle.length>1){
+    const agg=plans.aggregate.A;
+    const totalLoad=stops.filter(s=>!s.done).reduce((t,s)=>t+(s.weight||0),0);
+    html+=`<div class="settings aggwrap" style="display:flex;gap:26px;flex-wrap:wrap">
+      <div><div class="sub">Toplam yol (${plans.byVehicle.length} araç)</div><div class="eta">${fmt(agg.km,dec)} km</div></div>
+      <div><div class="sub">Toplam süre</div><div class="eta">${dur(agg.min)}</div></div>
+      <div><div class="sub">Toplam yakıt</div><div class="eta">₺${fmt(agg.fuel)}</div></div>
+      <div><div class="sub">Toplam yük</div><div class="eta">${fmt(totalLoad)} kg</div></div>
     </div>`;
+  }
+  $("manifest").innerHTML=html;
 }
 
-function renderAll(){renderList();renderBook();renderBoard();renderMap();renderManifest();}
+function renderAll(){
+  renderList(); renderVehicles(); renderBook(); renderBoard(); renderMap(); renderManifest(); renderRoadStatus();
+  saveState();
+}
+
+/* ============ KALICILIK (localStorage) ============ */
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      mode, stops, vehicles, book, depotOverride, useRoad,
+      settings:{
+        startTime:$("startTime").value, speed:$("speed").value, service:$("service").value,
+        cons:$("cons").value, price:$("price").value, ret:$("ret").value,
+        depot:$("depot").value, city:$("city").value
+      }
+    }));
+  }catch(e){ /* localStorage kullanılamıyor (gizli sekme vb.) — sessizce geç */ }
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const s=JSON.parse(raw);
+    mode = s.mode==="city" ? "city" : "intercity";
+    stops = Array.isArray(s.stops) ? s.stops : [];
+    vehicles = Array.isArray(s.vehicles) && s.vehicles.length ? s.vehicles : defaultVehicles();
+    book = s.book && typeof s.book==="object" ? s.book : {};
+    depotOverride = s.depotOverride || null;
+    useRoad = !!s.useRoad;
+    uid = 1 + stops.reduce((m,x)=>Math.max(m,x.id||0),0);
+    vuid = 1 + vehicles.reduce((m,x)=>Math.max(m,x.id||0),0);
+    if(s.settings){
+      if(s.settings.startTime) $("startTime").value=s.settings.startTime;
+      if(s.settings.speed) $("speed").value=s.settings.speed;
+      if(s.settings.service!=null && s.settings.service!=="") $("service").value=s.settings.service;
+      if(s.settings.cons) $("cons").value=s.settings.cons;
+      if(s.settings.price) $("price").value=s.settings.price;
+      if(s.settings.ret) $("ret").value=s.settings.ret;
+      if(s.settings.depot) $("depot").value=s.settings.depot;
+      if(s.settings.city) $("city").value=s.settings.city;
+    }
+    return true;
+  }catch(e){ return false; }
+}
 
 /* ============ MOD ============ */
-function setMode(m){
-  if(mode===m) return;
-  mode=m; plan=null; pending=null; stops=[]; depotOverride=null;
-  $("mIntercity").setAttribute("aria-pressed",m==="intercity");
-  $("mCity").setAttribute("aria-pressed",m==="city");
+function applyModeUI(m){
+  $("mIntercity").setAttribute("aria-pressed", m==="intercity");
+  $("mCity").setAttribute("aria-pressed", m==="city");
   const city=m==="city";
   $("coordField").style.display=city?"":"none";
   $("depotGpsWrap").style.display=city?"":"none";
   $("cityField").style.display=city?"none":"";
   $("addrHint").textContent=city?"— defterden tanınır":"— isteğe bağlı";
-  $("speed").value=city?26:62;
-  $("service").value=city?8:12;
-  $("cons").value=city?13:24;
   $("mapTitle").textContent=city?"Şehir içi rota":"Rota haritası";
   $("mapHint").textContent=city?"Konum GPS'ten veya yapıştırılan koordinattan gelir":"Listede olmayan bir nokta için haritaya tıklayın";
   $("factorHint").textContent=city
     ? "Şehir içi mesafeler kuş uçuşu değeri 1,42 katsayısıyla düzeltilir. Kesin konumu olan duraklar mavi, il merkezine düşen yaklaşık duraklar turuncu gösterilir."
-    : "Mesafeler kuş uçuşu değeri 1,32 karayolu katsayısıyla düzeltilir. Gerçek yol verisi için ilerleyen sürümde harita servisi bağlanacak.";
+    : "Mesafeler kuş uçuşu değeri 1,32 karayolu katsayısıyla düzeltilir. Gerçek karayolu mesafesi için üstteki \"Gerçek yol verisi kullan\" seçeneğini açabilirsiniz.";
+}
+function setMode(m){
+  if(mode===m) return;
+  mode=m; plans=null; pending=null; stops=[]; depotOverride=null; invalidateRoadMatrix();
+  applyModeUI(m);
+  $("speed").value=m==="city"?26:62;
+  $("service").value=m==="city"?8:12;
+  $("cons").value=m==="city"?13:24;
   renderAll();
 }
 $("mIntercity").addEventListener("click",()=>setMode("intercity"));
@@ -656,6 +947,7 @@ $("addr").addEventListener("input",()=>{
 
 function addStop(){
   let s;
+  const vehicleId = $("stopVeh").value ? +$("stopVeh").value : null;
   if(mode==="city"){
     const typed=parseCoords($("coords").value);
     const g=typed||pending;
@@ -664,22 +956,22 @@ function addStop(){
     if(g){
       s={id:uid++,name:label||"Nokta "+(stops.length+1),lat:g.lat,lng:g.lng,
          detail:label,weight:+$("weight").value||0,phone:$("phone").value.trim(),
-         exact:true,acc:g.acc??null,done:false};
+         exact:true,acc:g.acc??null,done:false,vehicleId};
       if(label) book[norm(label)]={label,lat:g.lat,lng:g.lng,acc:g.acc??null};
     }else{
       const c=cityByName($("depot").value)||CITIES[0];
       s={id:uid++,name:label,lat:c[1],lng:c[2],detail:label,weight:+$("weight").value||0,
-         phone:$("phone").value.trim(),exact:false,acc:null,done:false};
+         phone:$("phone").value.trim(),exact:false,acc:null,done:false,vehicleId};
     }
     $("coords").value=""; pending=null; $("stopInfo").innerHTML=""; $("gpsErr").textContent="";
   }else{
     const c=cityByName($("city").value); if(!c) return;
     s={id:uid++,name:c[0],lat:c[1],lng:c[2],detail:$("addr").value.trim(),
-       weight:+$("weight").value||0,phone:$("phone").value.trim(),exact:false,acc:null,done:false};
+       weight:+$("weight").value||0,phone:$("phone").value.trim(),exact:false,acc:null,done:false,vehicleId};
   }
   stops.push(s);
   $("addr").value="";$("weight").value="";$("phone").value="";$("bookHit").innerHTML="";
-  plan=null; renderAll();
+  plans=null; renderAll();
 }
 $("add").addEventListener("click",addStop);
 ["addr","weight","phone","coords"].forEach(id=>$(id).addEventListener("keydown",e=>{if(e.key==="Enter")addStop();}));
@@ -689,11 +981,37 @@ $("stopGps").addEventListener("click",()=>capture("stop"));
 
 $("list").addEventListener("click",e=>{
   const b=e.target.closest("[data-del]"); if(!b) return;
-  stops=stops.filter(s=>s.id!==+b.dataset.del); plan=null; renderAll();
+  stops=stops.filter(s=>s.id!==+b.dataset.del); plans=null; renderAll();
+});
+$("list").addEventListener("change",e=>{
+  const sel=e.target.closest("[data-vehsel]"); if(!sel) return;
+  const s=stops.find(x=>x.id===+sel.dataset.vehsel); if(!s) return;
+  s.vehicleId = sel.value ? +sel.value : null;
+  plans=null; renderAll();
 });
 $("bookList").addEventListener("click",e=>{
   const b=e.target.closest("[data-book]"); if(!b) return;
-  delete book[b.dataset.book]; renderBook();
+  delete book[b.dataset.book]; renderBook(); saveState();
+});
+
+$("vehAdd").addEventListener("click",()=>{
+  const name=$("vehName").value.trim() || "Araç "+(vehicles.length+1);
+  const cap=Math.max(0, +$("vehCap").value || 0);
+  vehicles.push({id:vuid++, name, cap});
+  $("vehName").value=""; $("vehCap").value="";
+  plans=null; renderAll();
+});
+$("vehAuto").addEventListener("click",()=>{
+  stops.forEach(s=>{ if(!s.done) s.vehicleId=null; });
+  planRoute();
+});
+$("vehList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-vehdel]"); if(!b) return;
+  if(vehicles.length<=1){ alert("En az bir araç kalmalı."); return; }
+  const id=+b.dataset.vehdel;
+  vehicles=vehicles.filter(v=>v.id!==id);
+  stops.forEach(s=>{ if(s.vehicleId===id) s.vehicleId=null; });
+  plans=null; renderAll();
 });
 
 $("manifest").addEventListener("click",e=>{
@@ -701,7 +1019,7 @@ $("manifest").addEventListener("click",e=>{
   if(done){
     const s=stops.find(x=>x.id===+done.dataset.done);
     if(s) s.done=!s.done;
-    plan=buildPlan(); renderAll(); return;
+    plans=buildPlans(); renderAll(); return;
   }
   const learn=e.target.closest("[data-learn]");
   if(learn){
@@ -713,7 +1031,8 @@ $("manifest").addEventListener("click",e=>{
       s.lat=p.coords.latitude; s.lng=p.coords.longitude;
       s.acc=p.coords.accuracy; s.exact=true;
       if(s.detail) book[norm(s.detail)]={label:s.detail,lat:s.lat,lng:s.lng,acc:s.acc};
-      plan=buildPlan(); renderAll();
+      invalidateRoadMatrix();
+      plans=buildPlans(); renderAll();
     },()=>{
       learn.textContent=old; learn.disabled=false;
       alert("Konum alınamadı. Tarayıcı izni kapalı olabilir; koordinatı elle de girebilirsiniz.");
@@ -721,8 +1040,15 @@ $("manifest").addEventListener("click",e=>{
   }
 });
 
-$("calc").addEventListener("click",()=>{plan=buildPlan();renderAll();});
-$("clear").addEventListener("click",()=>{stops=[];plan=null;renderAll();});
+$("calc").addEventListener("click",planRoute);
+$("clear").addEventListener("click",()=>{stops=[];plans=null;renderAll();});
+
+$("useRoad").addEventListener("change",()=>{
+  useRoad=$("useRoad").checked;
+  invalidateRoadMatrix();
+  updateRoadHint();
+  renderAll();
+});
 
 $("demo").addEventListener("click",()=>{
   if(mode==="city"){
@@ -732,10 +1058,10 @@ $("demo").addEventListener("click",()=>{
              ["Aydın Kırtasiye, İzzetpaşa",0.014,0.006,25],["Umut Kafe, Sanayi",-0.016,-0.007,33],
              ["Şen Pastane, Rızaiye",0.004,0.021,12],["Kardeşler Bakkal, Olgunlar",-0.021,0.004,28],
              ["Elif Eczane, Hilalkent",0.019,-0.017,7],["Vira Restoran, Gölbaşı",-0.005,-0.022,40]];
-    depotOverride={name:"Depo",lat:base[0],lng:base[1],isDepot:true};
+    depotOverride={id:"D",name:"Depo",lat:base[0],lng:base[1],isDepot:true};
     $("depotInfo").innerHTML=`<span class="coord">${base[0].toFixed(5)}, ${base[1].toFixed(5)}</span>`;
     stops=d.map(x=>({id:uid++,name:x[0].split(",")[0],lat:base[0]+x[1],lng:base[1]+x[2],
-      detail:x[0],weight:x[3],phone:"",exact:true,acc:8,done:false}));
+      detail:x[0],weight:x[3],phone:"",exact:true,acc:8,done:false,vehicleId:null}));
     d.forEach((x,i)=>{book[norm(x[0])]={label:x[0],lat:stops[i].lat,lng:stops[i].lng,acc:8};});
   }else{
     $("depot").value="Elazığ";
@@ -744,9 +1070,9 @@ $("demo").addEventListener("click",()=>{
              ["Diyarbakır","Sur Market Zinciri",410,"0538 471 03 92"],["Sivas","Kale Toptan Gıda",95,"0544 810 55 21"],
              ["Adana","Çukurova Dağıtım",275,"0530 662 19 74"]];
     stops=d.map(x=>{const c=cityByName(x[0]);
-      return {id:uid++,name:c[0],lat:c[1],lng:c[2],detail:x[1],weight:x[2],phone:x[3],exact:false,acc:null,done:false};});
+      return {id:uid++,name:c[0],lat:c[1],lng:c[2],detail:x[1],weight:x[2],phone:x[3],exact:false,acc:null,done:false,vehicleId:null};});
   }
-  plan=null; renderAll();
+  plans=null; invalidateRoadMatrix(); renderAll();
 });
 
 $("map").addEventListener("click",e=>{
@@ -757,19 +1083,28 @@ $("map").addEventListener("click",e=>{
     let near=CITIES[0],nd=Infinity;
     CITIES.forEach(c=>{const dd=(c[1]-lat)**2+(c[2]-lng)**2; if(dd<nd){nd=dd;near=c;}});
     stops.push({id:uid++,name:near[0],lat,lng,detail:"haritadan seçilen nokta",
-      weight:0,phone:"",exact:false,acc:null,done:false});
-    plan=null; renderAll();
+      weight:0,phone:"",exact:false,acc:null,done:false,vehicleId:null});
+    plans=null; renderAll();
   }
 });
 
-["speed","service","cons","price","ret","startTime","depot"].forEach(id=>
-  $(id).addEventListener("change",()=>{if(plan)plan=buildPlan();renderAll();}));
+["speed","service","cons","price","ret","startTime"].forEach(id=>
+  $(id).addEventListener("change",()=>{ if(plans) plans=buildPlans(); renderAll(); }));
+$("depot").addEventListener("change",()=>{
+  invalidateRoadMatrix();
+  if(plans) plans=buildPlans();
+  renderAll();
+});
 
 function tickClock(){$("clock").textContent=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});}
 
+/* ============ BAŞLANGIÇ ============ */
 fillSelects();
-$("factorHint").textContent="Mesafeler kuş uçuşu değeri 1,32 karayolu katsayısıyla düzeltilir. Gerçek yol verisi için ilerleyen sürümde harita servisi bağlanacak.";
-$("mapHint").textContent="Listede olmayan bir nokta için haritaya tıklayın";
+vehicles=defaultVehicles(); vuid=2;
+loadState();
+applyModeUI(mode);
+$("useRoad").checked=useRoad;
+updateRoadHint();
 tickClock(); setInterval(tickClock,20000);
 renderAll();
 </script>
