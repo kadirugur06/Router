@@ -74,6 +74,16 @@ lojistik,teslimat,kamyon,filo,rota,navigasyon,optimizasyon,dağıtım,şoför,vr
 *(100 karakteri geçmeyecek şekilde kısaltmanız gerekebilir — App Store
 Connect otomatik uyarır.)*
 
+## Copyright (App Information sayfasında zorunlu)
+
+```
+2026 [ad soyad veya şirket adınız]
+```
+
+*App Store Connect burada gerçek adınızı veya şirket unvanınızı bekliyor —
+geliştirici hesabınızı açarken kullandığınız yasal isim/unvanla aynı olması
+önerilir.*
+
 ## Kategori önerisi
 
 - Birincil: **Business** (İş)
@@ -95,16 +105,21 @@ verecektir.
 ## Destek URL'si ve Gizlilik Politikası URL'si (zorunlu alanlar)
 
 Apple, App Store Connect'te hem bir **Support URL** hem de bir **Privacy
-Policy URL** istiyor. Bu depoda bir gizlilik politikası taslağı
-`docs/PRIVACY_POLICY.md` olarak hazır — GitHub Pages ile ücretsiz
-yayınlayabilirsiniz:
+Policy URL** istiyor. Bu depoda hazır, stilize edilmiş bir HTML sayfası var:
+`docs/privacy-policy.html`. GitHub Pages ile ücretsiz yayınlayabilirsiniz:
 
 1. GitHub'da bu reponun **Settings → Pages** bölümüne gidin.
-2. Source olarak `main` branch + `/docs` klasörünü seçin.
-3. Birkaç dakika sonra `https://<kullanıcı-adınız>.github.io/Router/PRIVACY_POLICY.html`
-   gibi bir adres aktif olur (Markdown yerine `.html` istiyorsanız
-   `docs/PRIVACY_POLICY.md` dosyasını `.html`'e çevirebiliriz — isterseniz
-   bunu da hazırlarım).
+2. Source olarak `main` branch + `/docs` klasörünü seçin, Save'e basın.
+3. Birkaç dakika sonra aşağıdaki adres aktif olur:
+   ```
+   https://kadirugur06.github.io/Router/privacy-policy.html
+   ```
 4. Bu adresi App Store Connect'teki **Privacy Policy URL** alanına yapıştırın.
-5. **Support URL** için aynı sayfayı ya da bir e-posta adresi/iletişim
-   sayfası kullanabilirsiniz.
+5. **Support URL** için aynı sayfayı kullanabilirsiniz — sayfanın alt
+   kısmında iletişim e-postası (`kadirugur06@gmail.com`) da yer alıyor.
+   İsterseniz ayrı bir destek sayfası yerine doğrudan
+   `mailto:kadirugur06@gmail.com` adresini de Support URL alanına
+   yazabilirsiniz (Apple `mailto:` linklerini kabul eder).
+
+*(`docs/PRIVACY_POLICY.md` aynı içeriğin Markdown/okunabilir kopyasıdır —
+repo içi referans için saklanıyor, App Store'a bu HTML sürümü verilecek.)*

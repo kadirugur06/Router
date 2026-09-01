@@ -1,6 +1,6 @@
 # Router — Gizlilik Politikası
 
-*Son güncelleme: [tarih girin]*
+*Son güncelleme: 1 Eylül 2026*
 
 Router ("uygulama"), sevkiyat/teslimat rotalarını planlamanıza yardımcı
 olan bir araçtır. Bu belge, uygulamanın hangi verileri nasıl kullandığını
@@ -44,4 +44,4 @@ kaldırmak da tüm yerel verileri temizler.
 
 ## İletişim
 
-Sorularınız için: [e-posta adresinizi girin]
+Sorularınız için: kadirugur06@gmail.com
