@@ -5,6 +5,12 @@ sayfalarına kopyala-yapıştır için hazırlanmış taslak metinleri içerir.
 Karakter sınırlarını Apple'ın kuralları belirliyor — aşağıda her alan için
 sınır not edildi.
 
+*Not: Router artık ücretsiz sürüm + "Router Pro" aylık abonelik modeliyle
+çalışıyor. Abonelik ürününü App Store Connect'te oluşturma ve RevenueCat
+kurulumu için `docs/IOS_BUILD.md` dosyasındaki "8) Router Pro aboneliği"
+bölümüne bakın — fiyatı orada, App Store Connect üzerinden siz
+belirliyorsunuz.*
+
 ## Uygulama adı (30 karakter)
 
 ```
@@ -32,6 +38,16 @@ araçtır. Teslimat noktalarınızı ekleyin, Router en verimli sırayı
 hesaplasın — elle sıralamaya kıyasla kazandığınız yol, süre ve yakıtı
 anında görün.
 
+ÜCRETSİZ SÜRÜM
+Günlük en fazla 5 durak, tek araç ve kuş uçuşu mesafe hesabıyla
+sınırsız kullanın — kredi kartı gerekmez.
+
+ROUTER PRO (aylık abonelik)
+Sınırsız günlük durak, çoklu araç/şoför desteği ve gerçek karayolu
+mesafesi (OSRM) için Router Pro'ya abone olun. Fiyat, App Store'da
+uygulama sayfasında görüntülenir; abonelik satın alma ekranından
+istediğiniz zaman iptal edebilirsiniz.
+
 ÖZELLİKLER
 
 • Akıllı rota optimizasyonu
@@ -43,13 +59,13 @@ saat ve kaç TL yakıt tasarrufu sağladığınızı gösterir.
 81 il arasında şehirler arası dağıtım planlaması yapın, ya da GPS/adres
 tabanlı şehir içi teslimatlarınızı optimize edin.
 
-• Çoklu araç ve filo desteği
+• Çoklu araç ve filo desteği (Router Pro)
 Birden fazla araç/şoför tanımlayın; duraklar kapasiteye duyarlı şekilde
 otomatik bölüştürülür. İsterseniz bir durağı elle başka bir araca
 taşıyın. Her araç için ayrı optimize rota, haritada farklı renk ve kendi
 sevkiyat listesi.
 
-• Gerçek yol verisi (opsiyonel)
+• Gerçek yol verisi (Router Pro)
 Açık kaynaklı OSRM servisiyle kuş uçuşu tahmini yerine gerçek karayolu
 mesafesi ve güzergâhı kullanın.
 
@@ -59,7 +75,8 @@ konumunu bir kere kaydedin, sonraki seferlerde sadece adını yazın.
 
 • Verileriniz cihazınızda kalır
 Durak listeniz, araçlarınız ve ayarlarınız yalnızca cihazınızda saklanır;
-hiçbir sunucuya gönderilmez.
+hiçbir sunucuya gönderilmez. Abonelik durumu Apple App Store ve
+RevenueCat üzerinden doğrulanır.
 
 Router; kurye, lojistik, toptan dağıtım ve saha satış ekipleri için
 günlük rota planlamasını basitleştirmek üzere tasarlandı.

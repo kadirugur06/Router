@@ -30,6 +30,22 @@
   .langsw button{background:none;border:none;color:#9FB0C2;padding:5px 9px;font-size:12px;font-weight:700;border-radius:0;cursor:pointer}
   .langsw button[aria-pressed="true"]{background:var(--blue);color:#fff}
 
+  .pro-pill{align-self:center;background:none;border:1px solid #4A5A6E;color:#D9AE6A;border-radius:12px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.02em}
+  .pro-pill.is-pro{border-color:#5FD3A0;color:#5FD3A0}
+  .pro-pill:hover{background:#1E2831}
+  .lock-badge{display:inline-block;background:#D9AE6A;color:#16202B;font-family:var(--display);font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:1px 6px;border-radius:2px;margin-left:6px;vertical-align:middle}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(22,32,43,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:50}
+  .modal{background:var(--panel);border-radius:4px;max-width:420px;width:100%;padding:22px 24px;position:relative;max-height:90vh;overflow-y:auto}
+  .modal h2{font-family:var(--display);font-size:24px;font-weight:700;margin:0 0 8px}
+  .modal .modal-desc{color:var(--ink-soft);font-size:14px;line-height:1.5;margin:0 0 14px}
+  .modal-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:19px;padding:2px 6px;line-height:1}
+  .modal-close:hover{color:var(--red)}
+  .modal-features{list-style:none;margin:0 0 16px;padding:0}
+  .modal-features li{padding:7px 0 7px 24px;border-bottom:1px solid #EEF1F3;font-size:14px;position:relative}
+  .modal-features li:last-child{border-bottom:none}
+  .modal-features li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+  .modal .btn-go:disabled{background:#A9B4C0}
+
   .wrap{max-width:1360px;margin:0 auto;padding:18px;display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
   @media(max-width:940px){.wrap{grid-template-columns:1fr}}
 
@@ -170,6 +186,7 @@
   <h1>ROUTER</h1>
   <span class="sub" data-i18n="subtitle">Sevkiyat rota planlayıcı</span>
   <span class="spacer"></span>
+  <button class="pro-pill" id="proPill" type="button"><span id="proPillText">Router Pro</span></button>
   <div class="langsw" role="group" data-i18n-aria="uiLanguageAria" aria-label="Dil">
     <button id="langTr" aria-pressed="true">TR</button>
     <button id="langEn" aria-pressed="false">EN</button>
@@ -305,6 +322,22 @@
 
 <footer data-i18n="footerText">Router · rota planlama denemesi · duraklar, araçlar ve ayarlar bu tarayıcıda saklanır</footer>
 
+<div class="modal-backdrop" id="paywallBackdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="paywallTitle">
+    <button class="modal-close" id="paywallClose" aria-label="Kapat" data-i18n-aria="proCloseBtn">✕</button>
+    <h2 id="paywallTitle">Router Pro</h2>
+    <p class="modal-desc" data-i18n="proModalDesc">Sınırsız durak, çoklu araç desteği ve gerçek yol verisi için Router Pro'ya abone olun.</p>
+    <ul class="modal-features">
+      <li data-i18n="proFeature1">Sınırsız günlük durak</li>
+      <li data-i18n="proFeature2">Çoklu araç/şoför desteği</li>
+      <li data-i18n="proFeature3">Gerçek yol verisi (OSRM)</li>
+    </ul>
+    <div class="hint" id="paywallNotice" style="margin:0 0 12px"></div>
+    <button class="btn-go" id="paywallSubscribe" disabled></button>
+    <button class="btn-ghost" id="paywallRestore" style="margin-top:8px;width:100%" data-i18n="proRestoreBtn">Satın almaları geri yükle</button>
+  </div>
+</div>
+
 <script>
 /* ============ VERİ ============ */
 const CITIES = [
@@ -344,6 +377,13 @@ const TR={lon0:25.4,lon1:45.4,lat0:35.6,lat1:42.4};
 const OSRM_BASE="https://router.project-osrm.org";
 const PALETTE=["#0B4F9E","#0F6B47","#B8760A","#9E2B1F","#6A3FA0","#0E7C86","#8A4B08","#3D5AA6"];
 const STORAGE_KEY="router_state_v1";
+
+/* ============ ROUTER PRO (abonelik) ============ */
+// RevenueCat'ten alınan gerçek "Public SDK Key" buraya yazılmalı (bkz. docs/IOS_BUILD.md → "Router Pro aboneliği").
+// Boş bırakıldığı sürece uygulama sadece ücretsiz sürüm olarak çalışır, satın alma denemez.
+const RC_API_KEY_IOS="";
+const RC_ENTITLEMENT_ID="pro";
+const FREE_STOP_LIMIT=5;
 
 /* ============ ÇEVİRİ (i18n) ============ */
 const I18N = {
@@ -467,7 +507,29 @@ const I18N = {
     hourAbbr:"sa",
     minAbbr:"dk",
     demoDepotName:"Depo",
-    mapPickedDetail:"haritadan seçilen nokta"
+    mapPickedDetail:"haritadan seçilen nokta",
+    proStatusFree:"Ücretsiz",
+    proStatusPro:"Pro",
+    proStatusChecking:"…",
+    proModalDesc:"Sınırsız durak, çoklu araç desteği ve gerçek yol verisi için Router Pro'ya abone olun.",
+    proFeature1:"Sınırsız günlük durak",
+    proFeature2:"Çoklu araç/şoför desteği",
+    proFeature3:"Gerçek yol verisi (OSRM)",
+    proSubscribeBtn:"{price} / ay — abone ol",
+    proSubscribeBtnLoading:"Yükleniyor…",
+    proSubscribeBtnUnavailable:"Şu an kullanılamıyor",
+    proRestoreBtn:"Satın almaları geri yükle",
+    proCloseBtn:"Kapat",
+    proWebOnlyNotice:"Abonelik satın alma yalnızca App Store'dan indirilen Router uygulamasında kullanılabilir.",
+    proAlreadyProNotice:"Router Pro'ya zaten abonesiniz — teşekkürler!",
+    proPurchaseSuccess:"Router Pro'ya hoş geldiniz!",
+    proPurchaseError:"Satın alma tamamlanamadı. Lütfen tekrar deneyin.",
+    proRestoreSuccess:"Abonelik geri yüklendi.",
+    proRestoreNone:"Aktif bir abonelik bulunamadı.",
+    proRestoreError:"Geri yükleme başarısız oldu.",
+    limitStopsMsg:"Ücretsiz sürümde günlük en fazla {n} durak planlanabilir. Sınırsız durak için Router Pro'ya geçin.",
+    limitVehicleMsg:"Birden fazla araç Router Pro özelliğidir.",
+    limitRoadMsg:"Gerçek yol verisi (OSRM) Router Pro özelliğidir."
   },
   en:{
     pageTitle:"Router — Shipment Route Planner",
@@ -589,7 +651,29 @@ const I18N = {
     hourAbbr:"h",
     minAbbr:"min",
     demoDepotName:"Depot",
-    mapPickedDetail:"point picked from map"
+    mapPickedDetail:"point picked from map",
+    proStatusFree:"Free",
+    proStatusPro:"Pro",
+    proStatusChecking:"…",
+    proModalDesc:"Subscribe to Router Pro for unlimited stops, multi-vehicle support and real road data.",
+    proFeature1:"Unlimited daily stops",
+    proFeature2:"Multi-vehicle/driver support",
+    proFeature3:"Real road data (OSRM)",
+    proSubscribeBtn:"{price} / month — subscribe",
+    proSubscribeBtnLoading:"Loading…",
+    proSubscribeBtnUnavailable:"Currently unavailable",
+    proRestoreBtn:"Restore purchases",
+    proCloseBtn:"Close",
+    proWebOnlyNotice:"Subscribing is only available in the Router app downloaded from the App Store.",
+    proAlreadyProNotice:"You're already a Router Pro subscriber — thank you!",
+    proPurchaseSuccess:"Welcome to Router Pro!",
+    proPurchaseError:"Purchase couldn't be completed. Please try again.",
+    proRestoreSuccess:"Subscription restored.",
+    proRestoreNone:"No active subscription found.",
+    proRestoreError:"Restore failed.",
+    limitStopsMsg:"The free plan allows up to {n} stops a day. Upgrade to Router Pro for unlimited stops.",
+    limitVehicleMsg:"Multiple vehicles is a Router Pro feature.",
+    limitRoadMsg:"Real road data (OSRM) is a Router Pro feature."
   }
 };
 function t(key, vars){
@@ -632,6 +716,9 @@ let useRoad=false;               // gerçek yol verisi (OSRM) kullan
 let realMatrix=null;             // {pointKey:{pointKey:km}} — OSRM'den gelen mesafe matrisi
 let roadStatus="";                // "" | "loading" | "ok" | "error"
 let lang="tr";                    // "tr" | "en" — arayüz dili
+let isPro=false;                  // Router Pro aboneliği aktif mi
+let rcMonthlyPackage=null;        // RevenueCat'ten gelen aylık paket (fiyat gösterimi + satın alma için)
+let purchaseBusy=false;           // satın alma/geri yükleme işlemi sürüyor mu
 
 const $=id=>document.getElementById(id);
 const norm=s=>s.trim().toLocaleLowerCase("tr").replace(/\s+/g," ");
@@ -744,6 +831,118 @@ function parseCoords(t){
   const lat=parseFloat(m[1].replace(",",".")), lng=parseFloat(m[2].replace(",","."));
   if(isNaN(lat)||isNaN(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
   return {lat,lng};
+}
+
+/* ============ ROUTER PRO (RevenueCat abonelik) ============ */
+// Capacitor, kurulu native eklentileri window.Capacitor.Plugins altında otomatik
+// açığa çıkarır (GPS bölümündeki Geolocation ile aynı desen) — @revenuecat/purchases-capacitor
+// paketi native tarafta "Purchases" adıyla kayıtlıdır.
+function hasNativePurchases(){
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+    && window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases && RC_API_KEY_IOS);
+}
+function rc(){ return window.Capacitor.Plugins.Purchases; }
+
+async function initPurchases(){
+  if(!hasNativePurchases()) return; // web/PWA: her zaman ücretsiz sürüm, satın alma yok
+  try{
+    await rc().configure({apiKey:RC_API_KEY_IOS});
+    const {customerInfo} = await rc().getCustomerInfo();
+    applyCustomerInfo(customerInfo);
+  }catch(e){ console.warn("RevenueCat yapılandırılamadı:",e); }
+  loadOfferings();
+}
+function applyCustomerInfo(customerInfo){
+  isPro = !!(customerInfo && customerInfo.entitlements && customerInfo.entitlements.active
+    && customerInfo.entitlements.active[RC_ENTITLEMENT_ID]);
+  if(!isPro && useRoad){ useRoad=false; $("useRoad").checked=false; invalidateRoadMatrix(); updateRoadHint(); }
+  renderAll();
+}
+async function loadOfferings(){
+  if(!hasNativePurchases()) return;
+  try{
+    const {current} = await rc().getOfferings();
+    rcMonthlyPackage = current && current.availablePackages && current.availablePackages.length
+      ? current.availablePackages[0] : null;
+  }catch(e){ console.warn("RevenueCat paketleri alınamadı:",e); rcMonthlyPackage=null; }
+  renderProUI();
+}
+function openPaywall(){
+  $("paywallBackdrop").style.display="flex";
+  renderProUI();
+}
+function closePaywall(){ $("paywallBackdrop").style.display="none"; }
+
+async function doSubscribe(){
+  if(isPro){ closePaywall(); return; }
+  if(!hasNativePurchases() || !rcMonthlyPackage || purchaseBusy) return;
+  purchaseBusy=true; renderProUI();
+  try{
+    const {customerInfo} = await rc().purchasePackage({aPackage:rcMonthlyPackage});
+    applyCustomerInfo(customerInfo);
+    if(isPro){ alert(t("proPurchaseSuccess")); closePaywall(); renderAll(); }
+  }catch(e){
+    if(!(e && (e.userCancelled || (e.message||"").toLowerCase().includes("cancel")))){
+      alert(t("proPurchaseError"));
+    }
+  }
+  purchaseBusy=false; renderProUI();
+}
+async function doRestore(){
+  if(!hasNativePurchases() || purchaseBusy) return;
+  purchaseBusy=true; renderProUI();
+  try{
+    const {customerInfo} = await rc().restorePurchases();
+    const was=isPro;
+    applyCustomerInfo(customerInfo);
+    alert(isPro ? t("proRestoreSuccess") : t("proRestoreNone"));
+    if(isPro && !was){ closePaywall(); renderAll(); }
+  }catch(e){ alert(t("proRestoreError")); }
+  purchaseBusy=false; renderProUI();
+}
+
+function renderProUI(){
+  $("proPillText").textContent = isPro ? t("proStatusPro") : t("proStatusFree");
+  $("proPill").classList.toggle("is-pro", isPro);
+
+  const btn=$("paywallSubscribe");
+  if(isPro){
+    $("paywallNotice").textContent=t("proAlreadyProNotice");
+    btn.style.display="none";
+  }else if(!hasNativePurchases()){
+    $("paywallNotice").textContent=t("proWebOnlyNotice");
+    btn.style.display="none";
+  }else{
+    $("paywallNotice").textContent="";
+    btn.style.display="";
+    btn.disabled = purchaseBusy || !rcMonthlyPackage;
+    if(purchaseBusy) btn.textContent=t("proSubscribeBtnLoading");
+    else if(rcMonthlyPackage && rcMonthlyPackage.product && rcMonthlyPackage.product.priceString)
+      btn.textContent=t("proSubscribeBtn",{price:rcMonthlyPackage.product.priceString});
+    else btn.textContent=t("proSubscribeBtnUnavailable");
+  }
+}
+
+// Ücretsiz sürüm kilit kontrolleri — sınıra takılırsa uyarı gösterip paywall'ı açar, false döner.
+function checkStopLimit(){
+  if(isPro) return true;
+  if(stops.length < FREE_STOP_LIMIT) return true;
+  $("gpsErr").textContent=t("limitStopsMsg",{n:FREE_STOP_LIMIT});
+  openPaywall();
+  return false;
+}
+function checkVehicleLimit(){
+  if(isPro) return true;
+  if(vehicles.length<1) return true;
+  alert(t("limitVehicleMsg"));
+  openPaywall();
+  return false;
+}
+function checkRoadDataAllowed(){
+  if(isPro) return true;
+  alert(t("limitRoadMsg"));
+  openPaywall();
+  return false;
 }
 
 /* ============ SEÇİCİLER ============ */
@@ -933,7 +1132,7 @@ function vehSelectHtml(s){
   return `<select class="stop-veh" data-vehsel="${s.id}">${opts}</select>`;
 }
 function renderList(){
-  $("cnt").textContent=stops.length;
+  $("cnt").textContent = isPro ? stops.length : stops.length+"/"+FREE_STOP_LIMIT;
   $("calc").disabled=stops.filter(s=>!s.done).length<1;
   if(!stops.length){
     $("list").innerHTML=`<li><div class="empty">${t("emptyStops")}</div></li>`;
@@ -1160,7 +1359,7 @@ function renderManifest(){
 }
 
 function renderAll(){
-  renderList(); renderVehicles(); renderBook(); renderBoard(); renderMap(); renderManifest(); renderRoadStatus();
+  renderList(); renderVehicles(); renderBook(); renderBoard(); renderMap(); renderManifest(); renderRoadStatus(); renderProUI();
   saveState();
 }
 
@@ -1232,6 +1431,12 @@ $("mCity").addEventListener("click",()=>setMode("city"));
 $("langTr").addEventListener("click",()=>setLang("tr"));
 $("langEn").addEventListener("click",()=>setLang("en"));
 
+$("proPill").addEventListener("click",openPaywall);
+$("paywallClose").addEventListener("click",closePaywall);
+$("paywallBackdrop").addEventListener("click",e=>{ if(e.target===$("paywallBackdrop")) closePaywall(); });
+$("paywallSubscribe").addEventListener("click",doSubscribe);
+$("paywallRestore").addEventListener("click",doRestore);
+
 /* ============ OLAYLAR ============ */
 $("addr").addEventListener("input",()=>{
   const k=norm($("addr").value);
@@ -1245,6 +1450,7 @@ $("addr").addEventListener("input",()=>{
 });
 
 function addStop(){
+  if(!checkStopLimit()) return;
   let s;
   const vehicleId = $("stopVeh").value ? +$("stopVeh").value : null;
   if(mode==="city"){
@@ -1294,6 +1500,7 @@ $("bookList").addEventListener("click",e=>{
 });
 
 $("vehAdd").addEventListener("click",()=>{
+  if(!checkVehicleLimit()) return;
   const name=$("vehName").value.trim() || t("vehDefaultName",{n:vehicles.length+1});
   const cap=Math.max(0, +$("vehCap").value || 0);
   vehicles.push({id:vuid++, name, cap});
@@ -1342,6 +1549,7 @@ $("calc").addEventListener("click",planRoute);
 $("clear").addEventListener("click",()=>{stops=[];plans=null;renderAll();});
 
 $("useRoad").addEventListener("change",()=>{
+  if($("useRoad").checked && !checkRoadDataAllowed()){ $("useRoad").checked=false; return; }
   useRoad=$("useRoad").checked;
   invalidateRoadMatrix();
   updateRoadHint();
@@ -1370,6 +1578,7 @@ $("demo").addEventListener("click",()=>{
     stops=d.map(x=>{const c=cityByName(x[0]);
       return {id:uid++,name:c[0],lat:c[1],lng:c[2],detail:x[1],weight:x[2],phone:x[3],exact:false,acc:null,done:false,vehicleId:null};});
   }
+  if(!isPro && stops.length>FREE_STOP_LIMIT) stops=stops.slice(0,FREE_STOP_LIMIT);
   plans=null; invalidateRoadMatrix(); renderAll();
 });
 
@@ -1380,6 +1589,7 @@ $("map").addEventListener("click",e=>{
     const lng=TR.lon0+x/MW*(TR.lon1-TR.lon0), lat=TR.lat1-y/MH*(TR.lat1-TR.lat0);
     let near=CITIES[0],nd=Infinity;
     CITIES.forEach(c=>{const dd=(c[1]-lat)**2+(c[2]-lng)**2; if(dd<nd){nd=dd;near=c;}});
+    if(!checkStopLimit()) return;
     stops.push({id:uid++,name:near[0],lat,lng,detail:t("mapPickedDetail"),
       weight:0,phone:"",exact:false,acc:null,done:false,vehicleId:null});
     plans=null; renderAll();
@@ -1407,6 +1617,7 @@ $("useRoad").checked=useRoad;
 updateRoadHint();
 tickClock(); setInterval(tickClock,20000);
 renderAll();
+initPurchases();
 </script>
 </body>
 </html>

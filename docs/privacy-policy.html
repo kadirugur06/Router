@@ -89,30 +89,50 @@
       elle girerek de uygulamayı kullanabilirsiniz.</li>
     <li><strong>Girdiğiniz veriler:</strong> Durak listesi, araç/şoför
       bilgileri, adres defteri kayıtları ve ayarlarınız.</li>
+    <li><strong>Abonelik/satın alma durumu:</strong> "Router Pro"
+      aboneliğinize sahip olup olmadığınızı doğrulamak için Apple App
+      Store'un satın alma kaydı, RevenueCat üzerinden okunur (aşağıya
+      bakın).</li>
   </ul>
 
   <h2>Bu veriler nerede saklanır?</h2>
-  <p>Tüm veriler <strong>yalnızca cihazınızda</strong> (yerel depolama /
-  <code>localStorage</code>) saklanır. Router, bir sunucu çalıştırmaz ve
-  kullanıcı verilerini toplamaz, bir veritabanına kaydetmez veya üçüncü
-  taraflarla paylaşmaz.</p>
+  <p>Durak listesi, araç/şoför bilgileri, adres defteri ve ayarlarınız
+  <strong>yalnızca cihazınızda</strong> (yerel depolama /
+  <code>localStorage</code>) saklanır. Router, bu veriler için bir sunucu
+  çalıştırmaz, toplamaz veya bir veritabanına kaydetmez. Abonelik durumu
+  ise Apple'ın App Store'unda ve RevenueCat'in sunucularında (aşağıdaki
+  "Üçüncü taraf servisler" bölümüne bakın) tutulur — bu, satın almanın
+  geçerliliğini doğrulamak için teknik olarak gereklidir.</p>
 
   <h2>Üçüncü taraf servisler</h2>
   <div class="card">
-    <p style="margin:0">"Gerçek yol verisi kullan" seçeneği açıldığında,
+    <p style="margin:0 0 10px"><strong>OSRM (rota servisi):</strong>
+    "Gerçek yol verisi kullan" seçeneği (Router Pro özelliği) açıldığında,
     planladığınız durakların <strong>yalnızca koordinatları</strong> — isim,
     telefon veya başka bir kimliklendirici bilgi olmadan — açık kaynaklı
     <a href="https://project-osrm.org/" target="_blank" rel="noopener">OSRM</a>
     rota servisine (<code>router.project-osrm.org</code>) gönderilir;
-    karşılığında mesafe ve güzergâh bilgisi alınır. Bu seçenek kapalıyken
-    uygulama tamamen çevrimdışı çalışır ve hiçbir veri hiçbir sunucuya
-    gönderilmez.</p>
+    karşılığında mesafe ve güzergâh bilgisi alınır. Bu seçenek kapalıyken bu
+    veri hiçbir sunucuya gönderilmez.</p>
+    <p style="margin:0"><strong>RevenueCat (abonelik yönetimi):</strong>
+    "Router Pro" aboneliğiniz varsa, Apple App Store'un ürettiği anonim bir
+    satın alma/kullanıcı kimliği (isim, e-posta veya telefon numaranız
+    <strong>değil</strong>)
+    <a href="https://www.revenuecat.com/" target="_blank" rel="noopener">RevenueCat</a>
+    servisine iletilir; bu servis aboneliğinizin aktif olup olmadığını
+    doğrular ve uygulamanın kilidini buna göre açar. RevenueCat'in kendi
+    gizlilik politikasına
+    <a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">revenuecat.com/privacy</a>
+    adresinden ulaşabilirsiniz. Ücretsiz sürümü kullanıyorsanız bu veri hiç
+    oluşmaz.</p>
   </div>
 
   <h2>Veri paylaşımı ve takip</h2>
-  <p>Router; verilerinizi reklam, analitik veya takip amacıyla
+  <p>Router; verilerinizi reklam veya davranışsal takip amacıyla
   <strong>kullanmaz, satmaz veya paylaşmaz</strong>. Uygulama içinde
-  herhangi bir üçüncü taraf analitik veya reklam SDK'sı bulunmamaktadır.</p>
+  herhangi bir reklam SDK'sı bulunmamaktadır. RevenueCat, yalnızca "Router
+  Pro" aboneliğinizin geçerliliğini doğrulamak için kullanılır — reklam
+  veya pazarlama amaçlı bir profil oluşturmaz.</p>
 
   <h2>Verilerinizi silme</h2>
   <p>Uygulama içindeki "Listeyi boşalt" ve ilgili silme düğmeleriyle

@@ -36,6 +36,17 @@ dosyalık bir web uygulaması.
 - **Sevkiyat listesi**: Araç başına sıra, etap/kümülatif km, tahmini varış
   saati, teslim durumu ve maliyet özeti; birden fazla araç varsa toplam
   (agregat) özet de gösterilir.
+- **Çift dilli arayüz (TR/EN)**: Arayüz, cihazın sistem diline göre otomatik
+  Türkçe veya İngilizce açılır; sağ üstteki düğmeyle elle de değiştirilebilir,
+  tercih tarayıcıda kalıcı olur. Şehirler arası moddaki 81 il listesi (bu
+  özelliğin doğası gereği) Türkiye'ye özgü kalır; GPS tabanlı şehir içi mod
+  dünyanın her yerinde kullanılabilir.
+- **Router Pro (aylık abonelik)**: Ücretsiz sürüm günlük en fazla 5 durak,
+  tek araç ve kuş uçuşu mesafeyle sınırlıdır. Sınırsız durak, çoklu
+  araç/şoför desteği ve gerçek yol verisi (OSRM) "Router Pro" aboneliğiyle
+  açılır — satın alma [RevenueCat](https://www.revenuecat.com/) üzerinden
+  Apple App Store'a bağlanır, yalnızca native iOS uygulamasında çalışır
+  (kurulum: `docs/IOS_BUILD.md` → "8) Router Pro aboneliği").
 
 ## Proje yapısı
 
@@ -50,15 +61,19 @@ docs/IOS_BUILD.md         — iOS uygulaması olarak derleyip App Store'a
                              yükleme adımları
 docs/APP_STORE_LISTING.md — App Store Connect metinleri (ad, açıklama,
                              anahtar kelimeler, kategori)
-docs/PRIVACY_POLICY.md    — gizlilik politikası taslağı
+docs/PRIVACY_POLICY.md    — gizlilik politikası taslağı (Markdown)
+docs/privacy-policy.html  — aynı politikanın GitHub Pages'e yayınlanabilir
+                             HTML sürümü (App Store Connect'e verilecek olan)
 ```
 
 ## Kullanım (web)
 
 Depoyu klonlayıp `www/index.html` dosyasını bir tarayıcıda açmak yeterli;
 herhangi bir derleme adımı veya bağımlılık yok. "Gerçek yol verisi kullan"
-seçeneği kapalıyken tamamen çevrimdışı çalışır. Yerel bir sunucuyla
-denemek için:
+seçeneği kapalıyken tamamen çevrimdışı çalışır. Not: web sürümünde de
+ücretsiz sürümün 5 duraklık günlük sınırı geçerlidir — abonelik satın alma
+yalnızca App Store'dan indirilen iOS uygulamasında mümkündür. Yerel bir
+sunucuyla denemek için:
 
 ```bash
 npm install

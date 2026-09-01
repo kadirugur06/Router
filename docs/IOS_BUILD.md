@@ -130,7 +130,119 @@ için **`docs/PRIVACY_POLICY.md`** dosyasına ve `APP_STORE_LISTING.md`
 içindeki GitHub Pages ile yayınlama adımlarına bakın (App Store Connect
 bir Privacy Policy URL'si zorunlu kılıyor).
 
-## 8) İnceleme (App Review) notları
+## 8) Router Pro aboneliği (RevenueCat + App Store Connect)
+
+Router artık bir **ücretsiz sürüm + aylık "Router Pro" aboneliği** modeliyle
+çalışıyor:
+
+- **Ücretsiz**: günlük en fazla `FREE_STOP_LIMIT` (varsayılan **5**) durak,
+  tek araç, kuş uçuşu mesafe hesabı.
+- **Router Pro**: sınırsız durak, çoklu araç/şoför desteği, gerçek yol
+  verisi (OSRM).
+
+Bu kısıtlamalar `www/index.html` içinde uygulama tarafında (client-side)
+uygulanıyor; satın alma/abonelik durumunu ise [RevenueCat](https://www.revenuecat.com/)
+üzerinden App Store'un StoreKit altyapısına bağlıyoruz — makbuz doğrulama,
+abonelik yenileme/iptal takibi gibi karmaşık kısımları RevenueCat hallediyor.
+Ücretsiz planı aylık ~2.500$ gelire kadar kendisi de ücretsiz.
+
+### 8.1) App Store Connect'te abonelik ürününü oluştur
+
+1. App Store Connect'te uygulamana git → soldaki menüden **Monetization →
+   Subscriptions** (ya da "Features" altında, ASC sürümüne göre değişebilir).
+2. **+** ile yeni bir **Subscription Group** oluştur, örn. adı: `Router Pro`.
+3. Grup içinde **+** ile yeni bir abonelik ürünü ekle:
+   - **Reference Name**: `Router Pro Aylık` (sadece senin göreceğin etiket)
+   - **Product ID**: `com.kadirugur.router.pro.monthly` (bunu değiştirirsen
+     RevenueCat tarafında da aynısını kullan)
+   - **Subscription Duration**: 1 Month
+   - **Price**: kendi belirleyeceğin fiyatı seç (App Store Connect fiyat
+     tablosundan — otomatik olarak tüm ülke/para birimlerine çevrilir)
+   - **Localizations**: en az Türkçe için görünen ad + açıklama gir
+     (örn. "Router Pro" / "Sınırsız durak, çoklu araç ve gerçek yol verisi")
+   - **Review Screenshot**: App Review'a abonelik ekranının nasıl göründüğünü
+     gösteren bir ekran görüntüsü yükle — uygulamadaki paywall penceresinin
+     (Router Pro rozetine tıklayınca açılan pencere) bir görüntüsünü kullan.
+4. Kaydet.
+
+### 8.2) RevenueCat hesabı kur
+
+1. [app.revenuecat.com](https://app.revenuecat.com) üzerinden ücretsiz bir
+   hesap aç, yeni bir **Project** oluştur (örn. "Router").
+2. **Apps** → **+ New** → **App Store** seç, Bundle ID'yi
+   (`com.kadirugur.router`) gir.
+3. App Store Connect ile bağlantı için bir **App-Specific Shared Secret**
+   gerekiyor: App Store Connect'te uygulamana git → **App Information** →
+   **App-Specific Shared Secret** → **Manage** → oluştur, kopyala, RevenueCat'e
+   yapıştır.
+4. **Products** sekmesinde **+ New** ile 8.1'de oluşturduğun Product ID'yi
+   (`com.kadirugur.router.pro.monthly`) ekle.
+5. **Entitlements** sekmesinde `pro` adında bir yetki (entitlement) oluştur
+   (kod bu ismi bekliyor — `RC_ENTITLEMENT_ID` sabiti) ve az önce eklediğin
+   ürünü buna bağla.
+6. **Offerings** sekmesinde bir "Current" offering oluştur, içine bir Package
+   ekleyip (Package type: Monthly) ürünü ona bağla.
+7. **API Keys** sekmesinde **Public app-specific API key**'i (iOS) kopyala.
+
+### 8.3) API anahtarını uygulamaya ekle
+
+`www/index.html` içinde şu satırı bul:
+
+```js
+const RC_API_KEY_IOS="";
+```
+
+Çift tırnak arasına RevenueCat'ten kopyaladığın Public API Key'i yapıştır,
+kaydet, sonra:
+
+```bash
+npm install
+npx cap sync ios
+```
+
+(`npm install`, `@revenuecat/purchases-capacitor` paketini indirir;
+`npx cap sync ios` onu Xcode projesine native tarafta bağlar.)
+
+`RC_API_KEY_IOS` boş bırakıldığı sürece uygulama satın alma denemez, sadece
+ücretsiz sürüm olarak çalışır — yani bu adımı atlarsan uygulama yine de
+bozulmaz, sadece Pro'ya geçiş devre dışı kalır.
+
+### 8.4) Sandbox'ta test et
+
+1. App Store Connect → **Users and Access → Sandbox → Testers**'da bir test
+   Apple ID'si oluştur (gerçek e-postan olmasına gerek yok, sahte bir tane
+   yeter).
+2. Test cihazında (simülatörde de çalışır) **Ayarlar → App Store → Sandbox
+   Hesabı**'na bu test kullanıcısıyla giriş yap.
+3. Xcode'dan uygulamayı çalıştır, sağ üstteki **Router Pro** rozetine tıkla,
+   abone ol butonuna bas — fiyatın yanında "[Environment: Sandbox]" gibi bir
+   not göreceksin, gerçek para çekilmez.
+4. Satın alma sonrası uygulamanın kilidi açılmalı (durak sınırı kalkar,
+   ikinci araç eklenebilir, "Gerçek yol verisi" işaretlenebilir). Uygulamayı
+   silip tekrar kurup **Satın almaları geri yükle** butonunu da test et.
+
+### 8.5) App Review notları (abonelik)
+
+- **Restore Purchases** butonu zaten paywall ekranında var — Apple bunu
+  abonelik içeren her uygulamada zorunlu kılıyor.
+- Paywall ekranı satın almadan önce fiyatı, süreyi (aylık) ve neyin açıldığını
+  (özellik listesi) gösteriyor — Guideline 3.1.2 bunu istiyor.
+- **App Information → License Agreement** alanında "Apple's Standard License
+  Agreement" seçili kalmalı — bu, otomatik yenilenen abonelikler için
+  gereken standart şartları zaten içeriyor, ayrı bir EULA yazmana gerek yok.
+- **App Privacy** anketine, aboneliği RevenueCat üzerinden işlediğin için
+  **Purchase History** (Satın Alma Geçmişi) veri türünü de eklemen gerekiyor
+  — App Store Connect → App Privacy → Data Types → Edit'ten ekleyip
+  kullanım amacı olarak "App Functionality" işaretle, kullanıcı kimliğiyle
+  ilişkilendirilip ilişkilendirilmediğini RevenueCat'in sana ilettiği
+  müşteri kimliği (anonim bir ID, e-posta/isim değil) üzerinden "Hayır" (No)
+  olarak işaretleyebilirsin.
+- `docs/PRIVACY_POLICY.md` ve `docs/privacy-policy.html` dosyaları
+  RevenueCat'in bir üçüncü taraf servis olarak abonelik/satın alma verisini
+  işlediğini zaten belirtiyor — fiyatı değiştirirsen ayrıca bir şey
+  güncellemen gerekmiyor.
+
+## 9) İnceleme (App Review) notları
 
 - Apple, yalnızca bir web sitesini pencereye saran uygulamaları reddeder
   (Guideline 4.2 — Minimum Functionality). Bu proje artık native GPS izin
