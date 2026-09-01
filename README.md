@@ -40,11 +40,17 @@ dosyalık bir web uygulaması.
 ## Proje yapısı
 
 ```
-www/index.html      — uygulamanın kendisi (HTML/CSS/JS, tek dosya)
-capacitor.config.json — Capacitor (native sarmalama) yapılandırması
-package.json         — Capacitor bağımlılıkları ve yardımcı script'ler
-docs/IOS_BUILD.md     — iOS uygulaması olarak derleyip App Store'a
-                        yükleme adımları
+www/index.html            — uygulamanın kendisi (HTML/CSS/JS, tek dosya)
+capacitor.config.json     — Capacitor (native sarmalama) yapılandırması
+package.json              — Capacitor bağımlılıkları ve yardımcı script'ler
+resources/icon.png        — uygulama ikonu (1024×1024)
+resources/splash.png      — açılış ekranı (2732×2732)
+store/screenshots/        — App Store için hazır iPhone ekran görüntüleri
+docs/IOS_BUILD.md         — iOS uygulaması olarak derleyip App Store'a
+                             yükleme adımları
+docs/APP_STORE_LISTING.md — App Store Connect metinleri (ad, açıklama,
+                             anahtar kelimeler, kategori)
+docs/PRIVACY_POLICY.md    — gizlilik politikası taslağı
 ```
 
 ## Kullanım (web)

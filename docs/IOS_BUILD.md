@@ -51,8 +51,9 @@ npx cap sync ios
 
 ## 4) İkon ve açılış ekranı (splash screen)
 
-1024×1024 boyutunda tek bir `icon.png` ve bir `splash.png` (2732×2732
-önerilir) dosyasını `resources/` klasörüne koy, sonra:
+`resources/icon.png` (1024×1024) ve `resources/splash.png` (2732×2732)
+depoda hazır olarak geliyor — beğenmezsen aynı isim/boyutla kendi
+dosyalarınla değiştirebilirsin. Sonra:
 
 ```bash
 npx @capacitor/assets generate --ios
@@ -119,10 +120,15 @@ işaretle:
 
 ### Ekran görüntüleri, açıklama, kategori
 
-En az 6.7" (iPhone 15 Pro Max vb.) ekran görüntüleri gerekiyor. Uygulamayı
-simülatörde çalıştırıp `Cmd+S` ile ekran görüntüsü alabilirsin, ya da bu
-oturumda paylaştığım PNG'leri referans alabilirsin. Kategori olarak
-"Business" veya "Utilities" uygun olur.
+En az 6.7" (iPhone 15/14 Pro Max, 1290×2796 px) ekran görüntüleri
+gerekiyor. `store/screenshots/` klasöründe doğrudan App Store Connect'e
+yüklenebilecek 3 hazır görüntü var; istersen simülatörde `Cmd+S` ile
+kendi görüntülerini de alabilirsin. Uygulama adı, alt başlık, açıklama,
+anahtar kelimeler ve kategori önerisi için **`docs/APP_STORE_LISTING.md`**
+dosyasına bakın — kopyala-yapıştıra hazır. Gizlilik politikası taslağı
+için **`docs/PRIVACY_POLICY.md`** dosyasına ve `APP_STORE_LISTING.md`
+içindeki GitHub Pages ile yayınlama adımlarına bakın (App Store Connect
+bir Privacy Policy URL'si zorunlu kılıyor).
 
 ## 8) İnceleme (App Review) notları
 
