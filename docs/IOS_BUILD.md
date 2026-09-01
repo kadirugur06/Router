@@ -120,10 +120,16 @@ işaretle:
 
 ### Ekran görüntüleri, açıklama, kategori
 
-En az 6.7" (iPhone 15/14 Pro Max, 1290×2796 px) ekran görüntüleri
-gerekiyor. `store/screenshots/` klasöründe doğrudan App Store Connect'e
-yüklenebilecek 3 hazır görüntü var; istersen simülatörde `Cmd+S` ile
-kendi görüntülerini de alabilirsin. Uygulama adı, alt başlık, açıklama,
+1284×2778 px boyutunda ekran görüntüleri gerekiyor (App Store Connect'in
+6.5"/6.7" iPhone sekmesinin kabul ettiği kesin ölçü). `store/screenshots/`
+klasöründe doğrudan App Store Connect'e yüklenebilecek 4 hazır görüntü
+var — 3'ü temel akışı, 4.'sü (`store-4-router-pro.png`) Router Pro
+abonelik/paywall ekranını gösteriyor. **Not:** bu 4. görüntüdeki
+"₺99,99/ay" fiyatı bir yer tutucudur — App Store Connect'te gerçek
+aboneliğin fiyatını belirledikten sonra bu görseli o fiyatla yeniden
+üretip güncellemeniz gerekir (aksi halde Apple, ekran görüntüsü ile
+gerçek fiyat arasındaki tutarsızlık nedeniyle reddedebilir). İstersen
+simülatörde `Cmd+S` ile kendi görüntülerini de alabilirsin. Uygulama adı, alt başlık, açıklama,
 anahtar kelimeler ve kategori önerisi için **`docs/APP_STORE_LISTING.md`**
 dosyasına bakın — kopyala-yapıştıra hazır. Gizlilik politikası taslağı
 için **`docs/PRIVACY_POLICY.md`** dosyasına ve `APP_STORE_LISTING.md`
