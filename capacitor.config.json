@@ -1,0 +1,11 @@
+{
+  "appId": "com.kadirugur.router",
+  "appName": "Router",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
