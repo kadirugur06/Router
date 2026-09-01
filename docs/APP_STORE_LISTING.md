@@ -77,12 +77,8 @@ Connect otomatik uyarır.)*
 ## Copyright (App Information sayfasında zorunlu)
 
 ```
-2026 [ad soyad veya şirket adınız]
+2026 Kadir Uğur
 ```
-
-*App Store Connect burada gerçek adınızı veya şirket unvanınızı bekliyor —
-geliştirici hesabınızı açarken kullandığınız yasal isim/unvanla aynı olması
-önerilir.*
 
 ## Kategori önerisi
 
