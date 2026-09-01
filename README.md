@@ -37,8 +37,38 @@ dosyalık bir web uygulaması.
   saati, teslim durumu ve maliyet özeti; birden fazla araç varsa toplam
   (agregat) özet de gösterilir.
 
-## Kullanım
+## Proje yapısı
 
-Depoyu klonlayıp `index.html` dosyasını bir tarayıcıda açmak yeterli;
+```
+www/index.html            — uygulamanın kendisi (HTML/CSS/JS, tek dosya)
+capacitor.config.json     — Capacitor (native sarmalama) yapılandırması
+package.json              — Capacitor bağımlılıkları ve yardımcı script'ler
+resources/icon.png        — uygulama ikonu (1024×1024)
+resources/splash.png      — açılış ekranı (2732×2732)
+store/screenshots/        — App Store için hazır iPhone ekran görüntüleri
+docs/IOS_BUILD.md         — iOS uygulaması olarak derleyip App Store'a
+                             yükleme adımları
+docs/APP_STORE_LISTING.md — App Store Connect metinleri (ad, açıklama,
+                             anahtar kelimeler, kategori)
+docs/PRIVACY_POLICY.md    — gizlilik politikası taslağı
+```
+
+## Kullanım (web)
+
+Depoyu klonlayıp `www/index.html` dosyasını bir tarayıcıda açmak yeterli;
 herhangi bir derleme adımı veya bağımlılık yok. "Gerçek yol verisi kullan"
-seçeneği kapalıyken tamamen çevrimdışı çalışır.
+seçeneği kapalıyken tamamen çevrimdışı çalışır. Yerel bir sunucuyla
+denemek için:
+
+```bash
+npm install
+npm run serve   # http://localhost:8080
+```
+
+## iOS uygulaması olarak derleme
+
+Uygulama [Capacitor](https://capacitorjs.com/) ile native bir iOS kabuğuna
+sarılabilir (GPS izinleri native akışa bağlanır, App Store'a yüklenebilir
+hale gelir). Adım adım talimatlar için **[docs/IOS_BUILD.md](docs/IOS_BUILD.md)**
+dosyasına bakın — bu adımlar bir Mac + Xcode + Apple Developer Program
+üyeliği gerektirir.

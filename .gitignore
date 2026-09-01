@@ -1,0 +1,14 @@
+node_modules/
+
+# Capacitor native platform build artifacts (platform klasörlerinin kendisi
+# genelde commit edilir, sadece derleme/bağımlılık çıktıları hariç tutulur)
+ios/App/Pods/
+ios/App/build/
+ios/App/output/
+ios/DerivedData/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+.DS_Store

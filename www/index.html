@@ -413,15 +413,27 @@ function updateRoadHint(){
 }
 
 /* ============ GPS ============ */
-function capture(target){
-  $("gpsErr").textContent="";
-  if(!navigator.geolocation){
-    $("gpsErr").textContent="Bu tarayıcı konum servisini desteklemiyor. Koordinatı Google Maps'ten kopyalayıp yapıştırabilirsiniz.";
-    return;
+// Capacitor ile native uygulama olarak paketlendiğinde (iOS/Android) gerçek native
+// konum izin akışını kullanır; düz tarayıcıda (web/PWA) navigator.geolocation'a düşer.
+function hasNativeGeo(){
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+    && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation);
+}
+function getPosition(options){
+  if(hasNativeGeo()){
+    return window.Capacitor.Plugins.Geolocation.getCurrentPosition(options);
   }
+  return new Promise((resolve,reject)=>{
+    if(!navigator.geolocation){ reject({code:0}); return; }
+    navigator.geolocation.getCurrentPosition(resolve,reject,options);
+  });
+}
+async function capture(target){
+  $("gpsErr").textContent="";
   const btn = target==="depot" ? $("depotGps") : $("stopGps");
   const old = btn.textContent; btn.textContent="Konum alınıyor…"; btn.disabled=true;
-  navigator.geolocation.getCurrentPosition(p=>{
+  try{
+    const p=await getPosition({enableHighAccuracy:true,timeout:12000,maximumAge:0});
     btn.textContent=old; btn.disabled=false;
     const g={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy};
     if(target==="depot"){
@@ -433,14 +445,14 @@ function capture(target){
       $("coords").value=g.lat.toFixed(6)+", "+g.lng.toFixed(6);
       $("stopInfo").innerHTML=accBadge(g.acc)+"<span>konum alındı</span>";
     }
-  },e=>{
+  }catch(e){
     btn.textContent=old; btn.disabled=false;
-    const msg={1:"Konum izni verilmedi. Tarayıcı ayarlarından izin verin ya da koordinatı elle yapıştırın.",
+    const msg={1:"Konum izni verilmedi. Ayarlardan izin verin ya da koordinatı elle yapıştırın.",
                2:"Konum alınamadı (sinyal yok). Açık alanda tekrar deneyin veya koordinatı elle yapıştırın.",
-               3:"Konum isteği zaman aşımına uğradı. Tekrar deneyin."}[e.code]
+               3:"Konum isteği zaman aşımına uğradı. Tekrar deneyin."}[e&&e.code]
                || "Konum alınamadı. Koordinatı Google Maps'ten kopyalayıp yapıştırabilirsiniz.";
     $("gpsErr").textContent=msg;
-  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  }
 }
 function accBadge(a){
   if(a==null) return "";
@@ -1024,19 +1036,18 @@ $("manifest").addEventListener("click",e=>{
   const learn=e.target.closest("[data-learn]");
   if(learn){
     const s=stops.find(x=>x.id===+learn.dataset.learn); if(!s) return;
-    if(!navigator.geolocation){ alert("Bu tarayıcı konum servisini desteklemiyor."); return; }
     const old=learn.textContent; learn.textContent="Alınıyor…"; learn.disabled=true;
-    navigator.geolocation.getCurrentPosition(p=>{
+    getPosition({enableHighAccuracy:true,timeout:12000,maximumAge:0}).then(p=>{
       learn.textContent=old; learn.disabled=false;
       s.lat=p.coords.latitude; s.lng=p.coords.longitude;
       s.acc=p.coords.accuracy; s.exact=true;
       if(s.detail) book[norm(s.detail)]={label:s.detail,lat:s.lat,lng:s.lng,acc:s.acc};
       invalidateRoadMatrix();
       plans=buildPlans(); renderAll();
-    },()=>{
+    }).catch(()=>{
       learn.textContent=old; learn.disabled=false;
-      alert("Konum alınamadı. Tarayıcı izni kapalı olabilir; koordinatı elle de girebilirsiniz.");
-    },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+      alert("Konum alınamadı. Konum izni kapalı olabilir; koordinatı elle de girebilirsiniz.");
+    });
   }
 });
 
